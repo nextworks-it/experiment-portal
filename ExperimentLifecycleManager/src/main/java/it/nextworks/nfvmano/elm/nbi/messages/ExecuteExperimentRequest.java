@@ -25,6 +25,8 @@ public class ExecuteExperimentRequest implements InterfaceMessage {
 
 	private String experimentId;
 	
+	private String executionName;
+	
 	//this map specifies the test cases for the requested execution 
 	//in general a subset of the test cases can be executed in each run and the config parameters of the descriptors can be overwritten   
 	//the key of the map is the test case descriptor ID
@@ -36,9 +38,12 @@ public class ExecuteExperimentRequest implements InterfaceMessage {
 	
 	public ExecuteExperimentRequest() {}
 	
-	public ExecuteExperimentRequest(String experimentId, Map<String, Map<String, String>> testCaseDescriptorConfiguration) {
+	public ExecuteExperimentRequest(String experimentId, 
+			Map<String, Map<String, String>> testCaseDescriptorConfiguration,
+			String executionName) {
 		this.experimentId = experimentId;
 		if (testCaseDescriptorConfiguration != null) this.testCaseDescriptorConfiguration = testCaseDescriptorConfiguration;
+		this.executionName = executionName;
 	}
 	
 		
@@ -55,10 +60,20 @@ public class ExecuteExperimentRequest implements InterfaceMessage {
 	public Map<String, Map<String, String>> getTestCaseDescriptorConfiguration() {
 		return testCaseDescriptorConfiguration;
 	}
+	
+	
+
+	/**
+	 * @return the executionName
+	 */
+	public String getExecutionName() {
+		return executionName;
+	}
 
 	@Override
 	public void isValid() throws MalformattedElementException {
 		if (experimentId == null) throw new MalformattedElementException("Experiment execution request without experiment ID.");
+		if (executionName == null) throw new MalformattedElementException("Experiment execution request without execution name.");
 	}
 
 }

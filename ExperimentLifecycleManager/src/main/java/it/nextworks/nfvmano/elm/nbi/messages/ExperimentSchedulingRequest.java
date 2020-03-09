@@ -27,6 +27,9 @@ import it.nextworks.nfvmano.libs.ifa.common.exceptions.MalformattedElementExcept
 
 public class ExperimentSchedulingRequest implements InterfaceMessage {
 
+	@JsonProperty("experimentName")
+	private String experimentName;
+	
 	@JsonProperty("experimentDescriptorId")
 	private String experimentDescriptorId;
 
@@ -39,15 +42,24 @@ public class ExperimentSchedulingRequest implements InterfaceMessage {
 	public ExperimentSchedulingRequest() {	}
 
 	@JsonCreator
-	public ExperimentSchedulingRequest(@JsonProperty("experimentDescriptorId") String experimentDescriptorId,
+	public ExperimentSchedulingRequest(@JsonProperty("experimentName") String experimentName,
+									   @JsonProperty("experimentDescriptorId") String experimentDescriptorId,
 									   @JsonProperty("proposedTimeSlot") ExperimentExecutionTimeslot proposedTimeSlot,
 									   @JsonProperty("targetSites")List<EveSite> targetSites) {
+		this.experimentName = experimentName;
 		this.experimentDescriptorId = experimentDescriptorId;
 		this.proposedTimeSlot = proposedTimeSlot;
 		if (targetSites != null) this.targetSites = targetSites;
 	}
 	
 	
+
+	/**
+	 * @return the experimentName
+	 */
+	public String getExperimentName() {
+		return experimentName;
+	}
 
 	/**
 	 * @return the targetSites

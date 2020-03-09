@@ -69,7 +69,7 @@ public class MonitoringDataItem {
 	
 	public String getDataItemString() {
 		String s = expId + "." 
-				+ site.toString() + "." 
+				+ site.toString().toLowerCase() + "." 
 				+ mdt.toString().toLowerCase() + "." 
 				+ mdName;
 		return s;

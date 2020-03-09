@@ -138,7 +138,7 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 			log.debug("Experiment Descriptor Not Found");
 			throw new NotExistingEntityException("Experiment Descriptor Not Found");
 		}
-		String experimentId = experimentRecordManager.createExperiment(expDescriptorId, tenantId, request.getProposedTimeSlot(), request.getTargetSites());
+		String experimentId = experimentRecordManager.createExperiment(expDescriptorId, request.getExperimentName(), tenantId, request.getProposedTimeSlot(), request.getTargetSites());
 		initNewExperimentInstanceManager(experimentId, expD.getExpDescriptors().get(0), tenantId, request.getTargetSites());
 		String topic = "lifecycle.schedule." + experimentId;
 		ScheduleExperimentInternalMessage internalMessage = new ScheduleExperimentInternalMessage(experimentId, request);

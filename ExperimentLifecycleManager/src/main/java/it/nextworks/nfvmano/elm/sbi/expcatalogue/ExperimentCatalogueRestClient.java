@@ -25,6 +25,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.web.client.RestTemplate;
 
 import it.nextworks.nfvmano.catalogue.blueprint.messages.QueryCtxBlueprintResponse;
@@ -51,16 +52,21 @@ public class ExperimentCatalogueRestClient {
 	private static final Logger log = LoggerFactory.getLogger(ExperimentCatalogueRestClient.class);
 	
 	private RestTemplate restTemplate;
+
+
+	//Added this to support the async translation of the expd
+	private RestTemplate noAuthRestTemplate;
 	
 	private String catalogueUrl;
 	
-	public ExperimentCatalogueRestClient(String baseUrl) {
+	public ExperimentCatalogueRestClient(String baseUrl, RestTemplate restTemplate) {
 
 	    this.catalogueUrl = baseUrl + "/portal/catalogue";
-	    this.restTemplate= new RestTemplate(new BufferingClientHttpRequestFactory(
+	    this.restTemplate=restTemplate;
+	    this.noAuthRestTemplate= new RestTemplate(new BufferingClientHttpRequestFactory(
 				new SimpleClientHttpRequestFactory()
 		));
-	    this.restTemplate.setInterceptors(Collections.singletonList(new RequestResponseLoggingInterceptor()));
+	    this.noAuthRestTemplate.setInterceptors(Collections.singletonList(new RequestResponseLoggingInterceptor()));
 
 	}
 
@@ -375,7 +381,7 @@ public class ExperimentCatalogueRestClient {
 			log.debug("Sending HTTP request to retrieve experiment descriptor translation into NFV NS.");
 			
 			ResponseEntity<NfvNsInstantiationInfo> httpResponse =
-					restTemplate.exchange(url, HttpMethod.GET, getEntity, NfvNsInstantiationInfo.class);
+					noAuthRestTemplate.exchange(url, HttpMethod.GET, getEntity, NfvNsInstantiationInfo.class);
 			
 			log.debug("Response code: " + httpResponse.getStatusCode().toString());
 			HttpStatus code = httpResponse.getStatusCode();

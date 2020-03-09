@@ -15,19 +15,9 @@
 */
 package it.nextworks.nfvmano.elm.im;
 
-public enum ExperimentExecutionStatus {
+public enum ExperimentExecutionResultCode {
 
-	INIT,
-	CONFIGURING,
-	RUNNING,
-	RUNNING_STEP,
-	PAUSED,
-	VALIDATING,
-	COMPLETED,
-	ABORTING,
-	ABORTED,
+	SUCCESSFUL,
 	FAILED
 	
 }
-
-

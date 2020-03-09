@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -75,6 +76,9 @@ import it.nextworks.nfvmano.libs.ifa.common.elements.Filter;
 import it.nextworks.nfvmano.libs.ifa.common.exceptions.FailedOperationException;
 import it.nextworks.nfvmano.libs.ifa.common.messages.GeneralizedQueryRequest;
 import it.nextworks.nfvmano.libs.ifa.common.messages.SubscribeRequest;
+import it.nextworks.nfvmano.libs.ifa.descriptors.nsd.NsDf;
+import it.nextworks.nfvmano.libs.ifa.descriptors.nsd.NsLevel;
+import it.nextworks.nfvmano.libs.ifa.descriptors.nsd.Nsd;
 import it.nextworks.nfvmano.libs.ifa.osmanfvo.nslcm.interfaces.messages.CreateNsIdentifierRequest;
 import it.nextworks.nfvmano.libs.ifa.osmanfvo.nslcm.interfaces.messages.InstantiateNsRequest;
 import it.nextworks.nfvmano.libs.ifa.osmanfvo.nslcm.interfaces.messages.TerminateNsRequest;
@@ -115,7 +119,8 @@ public class ExperimentInstanceManager {
 	private List<TestCaseDescriptor> tcDescriptors = new ArrayList<>();
 	
 	//Used for monitoring
-	List<MonitoringDataItem> monitoringMetrics = new ArrayList<>();
+	List<MonitoringDataItem> applicationMonitoringMetrics = new ArrayList<>();
+	List<MonitoringDataItem> infrastructureMonitoringMetrics = new ArrayList<>();
 	List<MonitoringDataItem> monitoringKpis = new ArrayList<>();
 	
 	public ExperimentInstanceManager(String experimentId,
@@ -309,6 +314,11 @@ public class ExperimentInstanceManager {
     	ticketingSystemService.updateSchedulingTicket(lcTicketId, getLcTicketTypeFromTargetState(msg.getRequest().getStatus()));
     }
     
+    private static String getNsDescriptorId(String nsdIdentifier, String dfId, String ilId){
+        String seed = nsdIdentifier + "_" + dfId + "_" + ilId;
+        return UUID.nameUUIDFromBytes(seed.getBytes()).toString();
+    }
+    
     private void processDeployRequest(DeployExperimentInternalMessage msg) {
     	log.debug("Internal processing request to deploy experiment " + experimentId);
     	experimentRecordManager.setExperimentStatus(experimentId, ExperimentStatus.INSTANTIATING);
@@ -320,7 +330,8 @@ public class ExperimentInstanceManager {
     		for (EveSite es : targetSites) domains.add(es.toString());
     		nsInfo.setDomainIds(domains);
     		log.debug("Creating NFV NS instance ID.");
-    		String remoteNsdId = nsInfo.getNfvNsdId() + "_" + nsInfo.getDeploymentFlavourId() + "_" + nsInfo.getInstantiationLevelId();		//this depends on how it is mapped in the NFVO Catalogue driver
+    		String remoteNsdId = getNsDescriptorId(nsInfo.getNfvNsdId(), nsInfo.getDeploymentFlavourId(), nsInfo.getInstantiationLevelId());
+    		//String remoteNsdId = nsInfo.getNfvNsdId() + "_" + nsInfo.getDeploymentFlavourId() + "_" + nsInfo.getInstantiationLevelId();		//this depends on how it is mapped in the NFVO Catalogue driver
     		
     		String nsInstanceId = nfvoLcmService.createNsIdentifier(new CreateNsIdentifierRequest(remoteNsdId, 
     				"NS_exp_" + experimentId, 
@@ -331,6 +342,7 @@ public class ExperimentInstanceManager {
     		this.nsInstanceId = nsInstanceId;
     		experimentRecordManager.setExperimentNfvNsId(experimentId, nsInstanceId);
     		
+    		/*
     		log.debug("Subscribing to MSNO for receiving notifications related to NS instance " + nsInstanceId);
     		Map<String, String> parameters = new HashMap<>();
 			parameters.put("NS_ID", nsInstanceId);
@@ -339,7 +351,7 @@ public class ExperimentInstanceManager {
 			String subscriptionId = nfvoLcmService.subscribeNsLcmEvents(subscribeRequest, null);		//mgt of subscriptions via REST controller still to be implemented
 			this.msnoSubscriptionId = subscriptionId;
 			log.debug("Created subscription with ID " + subscriptionId);
-			
+			*/
     		
     		
     		
@@ -402,10 +414,15 @@ public class ExperimentInstanceManager {
     	status = ExperimentStatus.RUNNING_EXECUTION;
     	try {
     		currentExecutionId = eemService.createExperimentExecutionInstance();
-    		log.debug("Created experiment execution " + currentExecutionId + " for experiment " + experimentId);
+    		String executionName = msg.getRequest().getExecutionName();
+    		log.debug("Created experiment execution " + executionName + " with ID " + currentExecutionId + " for experiment " + experimentId);
     		eemSubscriptionId = eemService.subscribe(currentExecutionId, engine);
     		log.debug("Created subscription " + eemSubscriptionId + " for execution " + currentExecutionId);
-    		experimentRecordManager.createExperimentExecution(experimentId, currentExecutionId, msg.getRequest().getTestCaseDescriptorConfiguration(), eemSubscriptionId);
+    		experimentRecordManager.createExperimentExecution(experimentId, 
+    				currentExecutionId,
+    				executionName,
+    				msg.getRequest().getTestCaseDescriptorConfiguration(), 
+    				eemSubscriptionId);
     		eemService.runExperimentExecution(new RunExecutionRequest(currentExecutionId, experimentDescriptor.getExpDescriptorId(), msg.getRequest().getTestCaseDescriptorConfiguration(), nsInstanceId));
     		log.debug("Requested execution run to EEM");
     	} catch (Exception e) {
@@ -424,21 +441,25 @@ public class ExperimentInstanceManager {
     	ExperimentExecutionStatus execStatus = msg.getNotification().getCurrentStatus();
     	switch (execStatus) {
 		case CONFIGURING:
-		case RUNNING: {
+		case RUNNING:
+		case VALIDATING: {
 			log.debug("The execution is in status " + execStatus.toString());
 			experimentRecordManager.updateExperimentExecutionStatus(executionId, execStatus, new HashMap<>(), null);
 			log.debug("Internal database updated.");
 			break;
 		}
 		
-		case TERMINATED: 
+		case COMPLETED:
 		case FAILED: {
 			log.debug("The execution is in status " + execStatus.toString());
 			status = ExperimentStatus.INSTANTIATED;
 			experimentRecordManager.setExperimentStatus(experimentId, ExperimentStatus.INSTANTIATED);
 			try {
 				ExperimentExecution execution = eemService.getExperimentExecution(executionId);
-				experimentRecordManager.updateExperimentExecutionStatus(executionId, ExperimentExecutionStatus.TERMINATED, execution.getTestCaseResult(), execution.getReportUrl());
+				experimentRecordManager.updateExperimentExecutionStatus(executionId, 
+						ExperimentExecutionStatus.COMPLETED, 
+						execution.getTestCaseResult(), 
+						execution.getReportUrl());
 				eemService.unsubscribe(eemSubscriptionId);
 				//TODO: shall we remove from EEM?
 				eemService.removeExperimentExecutionRecord(executionId);
@@ -510,9 +531,12 @@ public class ExperimentInstanceManager {
     		experimentRecordManager.setExperimentStatus(experimentId, ExperimentStatus.TERMINATED);
     		log.debug("Set new status in DB");
     		try {
-    			log.debug("Unsubscribing from MSNO for NS istance " + nsInstanceId);
-    			nfvoLcmService.unsubscribeNsLcmEvents(msnoSubscriptionId);
-    			log.debug("Unsubscribed from MSNO");
+    			//log.debug("Unsubscribing from MSNO for NS istance " + nsInstanceId);
+    			//nfvoLcmService.unsubscribeNsLcmEvents(msnoSubscriptionId);
+    			//log.debug("Unsubscribed from MSNO");
+				log.debug("Deleting ns identifier {}", nsInstanceId);
+				nfvoLcmService.deleteNsIdentifier(nsInstanceId);
+				log.debug("Deleted ns identifier {}", nsInstanceId);
     		} catch (Exception e) {
     			log.error("Got an exception when unsubscribing from MSNO: " + e.getMessage());
     		}
@@ -531,12 +555,18 @@ public class ExperimentInstanceManager {
     	//at the moment we manage a single site
     	EveSite site = targetSites.get(0);
     	for (InfrastructureMetric im : expbMetrics) {
-    		monitoringMetrics.add(new MonitoringDataItem(experimentId, MonitoringDataType.METRIC, site, im.getMetricId()));
+    		log.debug("Infrastructure metric: " + " ID: " + im.getMetricId() + " Name: " + im.getName());
+    		infrastructureMonitoringMetrics.add(new MonitoringDataItem(experimentId, MonitoringDataType.INFRASTRUCTURE_METRIC, site, im.getMetricId()));
+            log.debug("adding application metric: "+im.getMetricId());
+
     	}
     	for (ApplicationMetric am : applicationMetrics) {
-    		monitoringMetrics.add(new MonitoringDataItem(experimentId, MonitoringDataType.METRIC, site, am.getMetricId()));
+    		log.debug("Infrastructure metric: " + " ID: " + am.getMetricId() + " Name: " + am.getName());
+    		applicationMonitoringMetrics.add(new MonitoringDataItem(experimentId, MonitoringDataType.APPLICATION_METRIC, site, am.getMetricId()));
+            log.debug("adding infrastructure metric: "+am.getMetricId());
     	}
-    	dcmDriver.subscribe(monitoringMetrics, MonitoringDataType.METRIC);
+    	dcmDriver.subscribe(infrastructureMonitoringMetrics, MonitoringDataType.INFRASTRUCTURE_METRIC);
+    	dcmDriver.subscribe(applicationMonitoringMetrics, MonitoringDataType.APPLICATION_METRIC);
     	log.debug("Subscribed for monitoring metrics");
     	
     	log.debug("Retrieving KPIs for monitoring subscription");
@@ -553,7 +583,8 @@ public class ExperimentInstanceManager {
     
     private void unsubscribeFromMonitoring() throws FailedOperationException {
     	log.debug("Removing monitoring subscriptions for experiment " + experimentId);
-    	dcmDriver.unsubscribe(monitoringMetrics, MonitoringDataType.METRIC);
+    	dcmDriver.unsubscribe(infrastructureMonitoringMetrics, MonitoringDataType.INFRASTRUCTURE_METRIC);
+    	dcmDriver.unsubscribe(applicationMonitoringMetrics, MonitoringDataType.APPLICATION_METRIC);
     	dcmDriver.unsubscribe(monitoringKpis, MonitoringDataType.KPI);
     	log.debug("Monitoring subscriptions removed for experiment " + experimentId);
     }

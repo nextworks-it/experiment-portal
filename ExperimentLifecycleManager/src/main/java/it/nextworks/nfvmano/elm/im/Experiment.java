@@ -52,6 +52,8 @@ public class Experiment {
     private Long id;
 
     private String experimentId;
+    
+    private String name;
 
     @JsonIgnore
     private String tenantId;
@@ -108,11 +110,13 @@ public class Experiment {
 	}
 
     public Experiment(String experimentDescriptorId,
+    		String name,
     		String tenantId,
     		ExperimentExecutionTimeslot timeslot,
     		List<EveSite> targetSites) {
     	this.tenantId = tenantId;
     	this.experimentDescriptorId = experimentDescriptorId;
+    	this.name = name;
     	this.status = ExperimentStatus.SCHEDULING;
     	this.timeslot = timeslot;
     	if (targetSites != null) this.targetSites = targetSites;
@@ -212,6 +216,13 @@ public class Experiment {
 	}
 
 
+
+	/**
+	 * @return the name
+	 */
+	public String getName() {
+		return name;
+	}
 
 	/**
 	 * @return the timeslot

@@ -52,6 +52,12 @@ public class EemService implements EemProviderInterface {
 	@Value("${eem.type}")
 	private String eemType;
 	
+	@Value("${eem.fakeReportUrl}")
+	private String fakeReportUrl;
+	
+	@Value("${eem.dummysuccessfulprob}")
+	private double succProb;
+	
 	@Autowired
 	private ExperimentLifecycleManagerEngine engine;
 	
@@ -61,7 +67,7 @@ public class EemService implements EemProviderInterface {
 	public void init() {
 		log.debug("Initializing EEM driver");
 		if (eemType.equals("DUMMY")) {
-			this.driver = new DummyEemDriver();
+			this.driver = new DummyEemDriver(fakeReportUrl, succProb);
 		} else if (eemType.equals("EEM")) {
 			this.driver = new EemDriver(eemAddress, Integer.parseInt(eemPort), eemNotificationUrl);
 		} else {

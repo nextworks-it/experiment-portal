@@ -20,9 +20,12 @@ import java.util.Map;
 
 import javax.annotation.PostConstruct;
 
+import it.nextworks.osm.auth.OAuth;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.stereotype.Service;
 
 import it.nextworks.nfvmano.catalogue.blueprint.elements.ExpBlueprint;
@@ -59,6 +62,7 @@ import it.nextworks.nfvmano.libs.ifa.common.exceptions.MalformattedElementExcept
 import it.nextworks.nfvmano.libs.ifa.common.exceptions.MethodNotImplementedException;
 import it.nextworks.nfvmano.libs.ifa.common.exceptions.NotExistingEntityException;
 import it.nextworks.nfvmano.libs.ifa.common.messages.GeneralizedQueryRequest;
+import org.springframework.web.client.RestTemplate;
 
 @Service
 public class SbiExperimentCatalogueService 
@@ -68,7 +72,10 @@ implements ExpDescriptorCatalogueInterface, ExpBlueprintCatalogueInterface, Tran
 	VsBlueprintCatalogueInterface, VsDescriptorCatalogueInterface {
 
 	private static final Logger log = LoggerFactory.getLogger(SbiExperimentCatalogueService.class);
-	
+
+	@Autowired
+	private RestTemplate restTemplate;
+
 	@Value("${portal.catalogue.address}")
 	private String catalogueAddress;
 	
@@ -337,7 +344,7 @@ implements ExpDescriptorCatalogueInterface, ExpBlueprintCatalogueInterface, Tran
 	private void initCatalogueRestClient() {
 		log.debug("Initializing Experiment Catalogue REST client");
 		String portalCatalogueBaseUrl = "http://" + catalogueAddress + ":" + cataloguePort;
-		experimentCatalogueRestClient = new ExperimentCatalogueRestClient(portalCatalogueBaseUrl);
+		experimentCatalogueRestClient = new ExperimentCatalogueRestClient(portalCatalogueBaseUrl, restTemplate);
 		log.debug("Experiment Catalogue REST client initialized with base URL: " + portalCatalogueBaseUrl);
 	}
 

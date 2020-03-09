@@ -13,13 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.nextworks.nfvmano.elm.sbi.monitoring;
+package it.nextworks.nfvmano.elm.sbi.monitoring.rest;
 
-public enum MonitoringDataType {
+public class MonitoringRecordValueEntry {
 
-	APPLICATION_METRIC,
-	INFRASTRUCTURE_METRIC,
-	KPI,
-	RESULT
+	private String topic;
+	private String expId;
+	private String action;
+	
+	public MonitoringRecordValueEntry(String topic, String expId, String action) {
+		this.topic = topic;
+		this.expId = expId;
+		this.action = action;
+	}
+
+	public String getTopic() {
+		return topic;
+	}
+
+	public String getExpId() {
+		return expId;
+	}
+
+	public String getAction() {
+		return action;
+	}
 	
 }

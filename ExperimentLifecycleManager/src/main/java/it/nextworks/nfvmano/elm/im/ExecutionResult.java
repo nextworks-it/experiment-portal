@@ -20,12 +20,34 @@ import javax.persistence.Embeddable;
 @Embeddable
 public class ExecutionResult {
 
+	private String testCaseName;
+	private ExperimentExecutionResultCode resultCode;
 	private String result;
 	
 	public ExecutionResult() {	}
 	
-	public ExecutionResult(String result) {
+	public ExecutionResult(String testCaseName,
+			ExperimentExecutionResultCode resultCode,
+			String result) {
+		this.testCaseName = testCaseName;
+		this.resultCode = resultCode;
 		this.result = result;
+	}
+	
+	
+
+	/**
+	 * @return the testCaseName
+	 */
+	public String getTestCaseName() {
+		return testCaseName;
+	}
+
+	/**
+	 * @return the resultCode
+	 */
+	public ExperimentExecutionResultCode getResultCode() {
+		return resultCode;
 	}
 
 	/**

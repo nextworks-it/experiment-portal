@@ -4,6 +4,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
+import org.keycloak.KeycloakPrincipal;
+import org.keycloak.KeycloakSecurityContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,17 +50,30 @@ public class ElmRestController {
 	
 	@Value("${authentication.enable}")
 	private boolean authenticationEnable;
+
+	@Value("${keycloak.enabled}")
+	private boolean keycloakEnabled;
 	
 	@Value("${elm.admin}")
 	private String adminTenant;
 	
 	private  String getUserFromAuth(Authentication auth) {
 		if(authenticationEnable){
-			Object principal = auth.getPrincipal();
-			if (!UserDetails.class.isAssignableFrom(principal.getClass())) {
-				throw new IllegalArgumentException("Auth.getPrincipal() does not implement UserDetails");
+			if(keycloakEnabled){
+				if (auth.getPrincipal() instanceof KeycloakPrincipal) {
+					KeycloakPrincipal<KeycloakSecurityContext> kp = (KeycloakPrincipal<KeycloakSecurityContext>) auth.getPrincipal();
+					// retrieving username here
+					return kp.getKeycloakSecurityContext().getToken().getPreferredUsername();
+				}else return null;
+			}else{
+				Object principal = auth.getPrincipal();
+				if (!UserDetails.class.isAssignableFrom(principal.getClass())) {
+					throw new IllegalArgumentException("Auth.getPrincipal() does not implement UserDetails");
+				}
+
+				return ((UserDetails) principal).getUsername();
 			}
-			return ((UserDetails) principal).getUsername();
+
 		}else return adminTenant;
 
 	}

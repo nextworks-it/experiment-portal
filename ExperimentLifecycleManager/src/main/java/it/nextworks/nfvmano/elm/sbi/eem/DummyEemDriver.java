@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import it.nextworks.nfvmano.elm.im.ExecutionResult;
 import it.nextworks.nfvmano.elm.im.ExperimentExecution;
+import it.nextworks.nfvmano.elm.im.ExperimentExecutionResultCode;
 import it.nextworks.nfvmano.elm.im.ExperimentExecutionStatus;
 import it.nextworks.nfvmano.elm.sbi.eem.interfaces.EemConsumerInterface;
 import it.nextworks.nfvmano.elm.sbi.eem.messages.ExperimentExecutionStatusChangeNotification;
@@ -44,8 +45,21 @@ public class DummyEemDriver extends EemAbstractDriver {
 	
 	private Map<String, String> subscriptions = new HashMap<>();
 	
+	private String dummyUrl;
+	
+	private double probTrue;
+	
 	public DummyEemDriver() {
 		super(EemDriverType.DUMMY, null);
+		dummyUrl = "Fake URL";
+		probTrue = 0.8;
+	}
+	
+	public DummyEemDriver(String dummyUrl, double probTrue) {
+		super(EemDriverType.DUMMY, null);
+		this.dummyUrl = dummyUrl;
+		if (probTrue <= 1) this.probTrue = probTrue;
+		else this.probTrue = 0.8;
 	}
 
 	@Override
@@ -54,7 +68,7 @@ public class DummyEemDriver extends EemAbstractDriver {
 		UUID execIdUuid = UUID.randomUUID();
 		String execId = execIdUuid.toString();
 		log.debug("Created new execution ID " + execId);
-		ExperimentExecution exec = new ExperimentExecution(null, execId, null);
+		ExperimentExecution exec = new ExperimentExecution(null, execId, null, null);
 		execs.put(execId, exec);
 		log.debug("Exec " + execId + " stored internally");
 		return execId;
@@ -67,17 +81,34 @@ public class DummyEemDriver extends EemAbstractDriver {
 		log.debug("Received request to run experiment execution " + execId);
 		if (execs.containsKey(execId)) {
 			ExperimentExecution exec = execs.get(execId);
-			exec.setStatus(ExperimentExecutionStatus.TERMINATED);
-			exec.setReportUrl("Fake URL");
+			exec.setStatus(ExperimentExecutionStatus.COMPLETED);
+			exec.setReportUrl(dummyUrl);
 			Map<String, ExecutionResult> results = new HashMap<>();
-			results.put("TCD_ID", new ExecutionResult("Successful"));
+			if (exp(probTrue)) {
+				results.put("TCD_1", new ExecutionResult("testCase 1",
+					ExperimentExecutionResultCode.SUCCESSFUL,
+					"Successful"));
+			} else {
+				results.put("TCD_1", new ExecutionResult("testCase 1",
+						ExperimentExecutionResultCode.FAILED,
+						"Failure"));
+			}
+			if (exp(probTrue)) {
+				results.put("TCD_2", new ExecutionResult("testCase 2",
+					ExperimentExecutionResultCode.SUCCESSFUL,
+					"Successful"));
+			} else {
+				results.put("TCD_2", new ExecutionResult("testCase 2",
+						ExperimentExecutionResultCode.FAILED,
+						"Failure"));
+			}
 			exec.setTestCaseResult(results);
 			execs.put(execId, exec);
 			
 			EemConsumerInterface consumer = consumers.get(execId);
 			consumer.notifyExperimentExecutionStatusChange(new ExperimentExecutionStatusChangeNotification(execId, ExperimentExecutionStatus.CONFIGURING));
 			consumer.notifyExperimentExecutionStatusChange(new ExperimentExecutionStatusChangeNotification(execId, ExperimentExecutionStatus.RUNNING));
-			consumer.notifyExperimentExecutionStatusChange(new ExperimentExecutionStatusChangeNotification(execId, ExperimentExecutionStatus.TERMINATED));
+			consumer.notifyExperimentExecutionStatusChange(new ExperimentExecutionStatusChangeNotification(execId, ExperimentExecutionStatus.COMPLETED));
 		} else throw new NotExistingEntityException("Execution " + execId + " not found");
 	}
 	
@@ -128,5 +159,7 @@ public class DummyEemDriver extends EemAbstractDriver {
 		} else throw new NotExistingEntityException("Subscription " + subscriptionId + " not found.");
 	}
 
-	
+	private boolean exp(double probTrue) {
+		return Math.random() >= 1.0 - probTrue;
+	}
 }

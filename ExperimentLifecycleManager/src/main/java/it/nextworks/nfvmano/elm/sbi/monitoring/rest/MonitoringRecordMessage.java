@@ -13,13 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.nextworks.nfvmano.elm.sbi.monitoring;
+package it.nextworks.nfvmano.elm.sbi.monitoring.rest;
 
-public enum MonitoringDataType {
+import java.util.ArrayList;
+import java.util.List;
 
-	APPLICATION_METRIC,
-	INFRASTRUCTURE_METRIC,
-	KPI,
-	RESULT
+public class MonitoringRecordMessage {
+
+	private List<MonitoringRecordItem> records = new ArrayList<MonitoringRecordItem>();
+
+	public MonitoringRecordMessage(List<MonitoringRecordItem> records) {
+		if (records != null) this.records = records;
+	}
+	
+	public List<MonitoringRecordItem> getRecords() {
+		return records;
+	}
+	
+	
 	
 }

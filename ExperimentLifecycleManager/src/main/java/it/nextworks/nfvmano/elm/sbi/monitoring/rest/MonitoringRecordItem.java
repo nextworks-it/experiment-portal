@@ -13,13 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.nextworks.nfvmano.elm.sbi.monitoring;
+package it.nextworks.nfvmano.elm.sbi.monitoring.rest;
 
-public enum MonitoringDataType {
+public class MonitoringRecordItem {
 
-	APPLICATION_METRIC,
-	INFRASTRUCTURE_METRIC,
-	KPI,
-	RESULT
+	private MonitoringRecordValueEntry value;
+	
+	public MonitoringRecordItem(MonitoringRecordValueEntry value) {
+		this.value = value;
+	}
+
+	public MonitoringRecordValueEntry getValue() {
+		return value;
+	}
 	
 }

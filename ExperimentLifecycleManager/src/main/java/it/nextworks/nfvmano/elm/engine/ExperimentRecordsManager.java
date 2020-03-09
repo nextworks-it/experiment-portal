@@ -58,9 +58,9 @@ public class ExperimentRecordsManager {
 	
 	public ExperimentRecordsManager() {	}
 	
-	public synchronized String createExperiment(String experimentDescriptorId, String tenantId, ExperimentExecutionTimeslot timeslot, List<EveSite> targetSites) {
+	public synchronized String createExperiment(String experimentDescriptorId, String experimentName, String tenantId, ExperimentExecutionTimeslot timeslot, List<EveSite> targetSites) {
 		log.debug("Storing a new experiment instance in DB.");
-		Experiment experiment = new Experiment(experimentDescriptorId, tenantId, timeslot, targetSites);
+		Experiment experiment = new Experiment(experimentDescriptorId, experimentName, tenantId, timeslot, targetSites);
 		experimentRepository.saveAndFlush(experiment);
 		Long id = experiment.getId();
 		String experimentId = id.toString();
@@ -71,12 +71,13 @@ public class ExperimentRecordsManager {
 	}
 	
 	public synchronized void createExperimentExecution(String experimentId, 
-			String executionId, 
+			String executionId,
+			String executionName,
 			Map<String, Map<String, String>> testCaseDescriptorConfiguration,
 			String eemSubscriptionId) throws NotExistingEntityException {
 		log.debug("Storing a new experiment execution in DB.");
 		Experiment experiment = retrieveExperimentFromId(experimentId);
-		ExperimentExecution experimentExecution = new ExperimentExecution(experiment, executionId, eemSubscriptionId);
+		ExperimentExecution experimentExecution = new ExperimentExecution(experiment, executionId, executionName, eemSubscriptionId);
 		experimentExecutionRepository.saveAndFlush(experimentExecution);
 		
 		for (Map.Entry<String, Map<String, String>> e : testCaseDescriptorConfiguration.entrySet()) {

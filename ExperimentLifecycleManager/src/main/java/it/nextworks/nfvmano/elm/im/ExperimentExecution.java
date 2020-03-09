@@ -39,6 +39,7 @@ import org.hibernate.annotations.OnDeleteAction;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
 public class ExperimentExecution {
@@ -54,6 +55,9 @@ public class ExperimentExecution {
 	
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	private String executionId;
+	
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	private String executionName;
 
 	private ExperimentExecutionStatus status;
 
@@ -66,6 +70,8 @@ public class ExperimentExecution {
 	@LazyCollection(LazyCollectionOption.FALSE)
 	private List<TestCaseExecutionConfiguration> testCaseDescriptorConfiguration = new ArrayList<TestCaseExecutionConfiguration>();
 	
+	//Key: test case descriptor ID
+	//Value: result of the test case execution
 	@JsonInclude(JsonInclude.Include.NON_EMPTY)
 	@ElementCollection(fetch=FetchType.EAGER)
 	@Fetch(FetchMode.SELECT)
@@ -82,9 +88,11 @@ public class ExperimentExecution {
 	
 	public ExperimentExecution(Experiment experiment,
 			String executionId,
+			String executionName,
 			String eemSubscriptionId) { 
 		this.experiment = experiment;
 		this.executionId = executionId;
+		this.executionName = executionName;
 		this.status = ExperimentExecutionStatus.INIT;
 		this.eemSubscriptionId = eemSubscriptionId;
 	}
@@ -99,6 +107,7 @@ public class ExperimentExecution {
 	/**
 	 * @param status the status to set
 	 */
+	@JsonProperty("state")
 	public void setStatus(ExperimentExecutionStatus status) {
 		this.status = status;
 	}
@@ -112,6 +121,13 @@ public class ExperimentExecution {
 
 	
 	
+	/**
+	 * @return the executionName
+	 */
+	public String getExecutionName() {
+		return executionName;
+	}
+
 	/**
 	 * @return the experiment
 	 */
