@@ -314,6 +314,7 @@ public class ExperimentInstanceManager {
 			Experiment experiment=experimentRecordManager.retrieveExperimentFromId(experimentId);
 			String ticketId = ticketingSystemService.createSchedulingTicket(experiment, experimentDescriptor, msg.getRequest().getProposedTimeSlot());
 			log.debug("Generated ticket " + ticketId + " to notify the site manager.");
+			lcTicketId = ticketId;
 			experimentRecordManager.setLcTicketId(experimentId, ticketId);
 		} catch (NotExistingEntityException e) {
 			log.error("Error retrieving experiment, this should not happen:", e);
