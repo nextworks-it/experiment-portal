@@ -82,7 +82,14 @@ public class Experiment {
     private String nfvNsInstanceId;
     
     private String currentExecutionId;
-    
+
+    @JsonIgnore
+    private String currentEemSubscriptionId;
+
+
+	@JsonIgnore
+	private String currentMsnoSubscriptionId;
+
     private String errorMessage;
     
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
@@ -158,6 +165,36 @@ public class Experiment {
 	}
 
 
+	/**
+	 * @param currentMsnoSubscriptionId the currentMsnoSubscriptionId to set
+	 */
+	public void setCurrentMsnoSubscriptionId(String currentMsnoSubscriptionId){
+		this.currentMsnoSubscriptionId=currentMsnoSubscriptionId;
+	}
+
+
+	/**
+	 * @return the currentMsnoSubscriptionId
+	 */
+	public String getCurrentMsnoSubscriptionId() {
+		return currentMsnoSubscriptionId;
+	}
+
+
+	/**
+	 * @param currentEemSubscriptionId the currentEemSubscriptionId to set
+	 */
+	public void setCurrentEemSubscriptionId(String currentEemSubscriptionId){
+		this.currentEemSubscriptionId=currentEemSubscriptionId;
+	}
+
+
+	/**
+	 * @return the currentEemSubscriptionId
+	 */
+	public String getCurrentEemSubscriptionId() {
+		return currentEemSubscriptionId;
+	}
 
 	/**
 	 * @return the currentExecutionId

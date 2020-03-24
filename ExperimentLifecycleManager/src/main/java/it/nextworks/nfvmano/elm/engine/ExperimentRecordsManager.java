@@ -18,6 +18,7 @@ package it.nextworks.nfvmano.elm.engine;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -125,6 +126,28 @@ public class ExperimentRecordsManager {
 			log.error("Impossible to set status for the experiment " + experimentId + " since it is not found in the db.");
 		}
 	}
+
+	public synchronized void setExperimentCurrentEemSubscriptionId(String experimentId, String currentEemSubscriptionId) {
+		log.debug("Setting CurrentEemSubscriptionId " + currentEemSubscriptionId + " for experiment " + experimentId);
+		try {
+			Experiment experiment = retrieveExperimentFromId(experimentId);
+			experiment.setCurrentEemSubscriptionId(currentEemSubscriptionId);
+			experimentRepository.saveAndFlush(experiment);
+		} catch (NotExistingEntityException e) {
+			log.error("Impossible to set currentEemSusbcriptionId for the experiment " + experimentId + " since it is not found in the db.");
+		}
+	}
+
+	public synchronized void setExperimentCurrentMsnoSubscriptionId(String experimentId, String currentMsnoSubscriptionId) {
+		log.debug("Setting CurrentMsnoSubscriptionId " + currentMsnoSubscriptionId + " for experiment " + experimentId);
+		try {
+			Experiment experiment = retrieveExperimentFromId(experimentId);
+			experiment.setCurrentMsnoSubscriptionId(currentMsnoSubscriptionId);
+			experimentRepository.saveAndFlush(experiment);
+		} catch (NotExistingEntityException e) {
+			log.error("Impossible to set currentMsnoSusbcriptionId for the experiment " + experimentId + " since it is not found in the db.");
+		}
+	}
 	
 	public synchronized void setExperimentNfvNsId(String experimentId, String nfvNsId) {
 		log.debug("Setting NFV NS instance ID " + nfvNsId + " for experiment " + experimentId);
@@ -220,6 +243,15 @@ public class ExperimentRecordsManager {
 		Optional<ExperimentExecution> execOpt = experimentExecutionRepository.findByExecutionId(experimentExecutionId);
 		if (execOpt.isPresent()) return execOpt.get();
 		else throw new NotExistingEntityException("Experiment execution with ID " + experimentExecutionId + " not present in DB.");
+	}
+
+	public List<Experiment> retrieveAllActiveExperiments(){
+		log.debug("Retrieving all active experiments");
+		List<Experiment> allExperiments = experimentRepository.findAll();
+		List<Experiment> activeExperiments = allExperiments.stream()
+				.filter(currentExperiment -> !currentExperiment.getStatus().equals(ExperimentStatus.TERMINATED))
+				.collect(Collectors.toList());
+		return activeExperiments;
 	}
 
 }

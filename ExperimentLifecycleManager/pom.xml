@@ -141,6 +141,13 @@
             <version>${springfox-version}</version>
         </dependency>
 
+        <!-- ticketing client  dependencies -->
+        <dependency>
+            <groupId>io.swagger</groupId>
+            <artifactId>ticketing-client</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+
 <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.datatype/jackson-datatype-jsr310 -->
 <dependency>
     <groupId>com.fasterxml.jackson.datatype</groupId>

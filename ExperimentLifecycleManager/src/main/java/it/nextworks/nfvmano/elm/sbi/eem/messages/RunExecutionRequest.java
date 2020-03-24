@@ -17,6 +17,9 @@ package it.nextworks.nfvmano.elm.sbi.eem.messages;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
+
 
 import it.nextworks.nfvmano.libs.ifa.common.InterfaceMessage;
 import it.nextworks.nfvmano.libs.ifa.common.exceptions.MalformattedElementException;
@@ -27,17 +30,30 @@ public class RunExecutionRequest implements InterfaceMessage {
 	private String experimentDescriptorId;
 	private Map<String, Map<String, String>> testCaseDescriptorConfiguration = new HashMap<String, Map<String,String>>();
 	private String nsInstanceId;
+	private String tenantId;
+	private List<String> siteNames = new ArrayList<>();
+	private String experimentId;
 	
 	public RunExecutionRequest() {	}
 	
 	public RunExecutionRequest(String executionId,
 			String experimentDescriptorId,
 			Map<String, Map<String, String>> testCaseDescriptorConfiguration,
-			String nsInstanceId) {
+			String nsInstanceId,
+            String tenantId,
+			List<String> siteNames,
+			String experimentId) {
 		this.executionId = executionId;
 		this.experimentDescriptorId = experimentDescriptorId;
 		if (testCaseDescriptorConfiguration != null) this.testCaseDescriptorConfiguration = testCaseDescriptorConfiguration;
 		this.nsInstanceId = nsInstanceId;
+		this.tenantId = tenantId;
+		this.experimentId = experimentId;
+		if (siteNames != null){
+			for (String siteName: siteNames){
+				this.siteNames.add(siteName);
+			}
+		}
 	}
 
 	
@@ -63,6 +79,8 @@ public class RunExecutionRequest implements InterfaceMessage {
 		return testCaseDescriptorConfiguration;
 	}
 
+	public String getTenantId(){ return tenantId; }
+
 	/**
 	 * @return the nsInstanceId
 	 */
@@ -70,11 +88,28 @@ public class RunExecutionRequest implements InterfaceMessage {
 		return nsInstanceId;
 	}
 
+
+	public String getExperimentId(){ return experimentId; }
+
+	public void setExecutionId(String experimentId){ this.experimentId = experimentId; }
+
+	public List<String> getSiteNames(){ return this.siteNames; }
+
+	public void setSiteNames(List<String> siteNames){
+		if (siteNames != null){
+			for (String site: siteNames)
+				this.siteNames.add(site);
+		}
+	}
+
+
 	@Override
 	public void isValid() throws MalformattedElementException {
 		if (executionId == null) throw new MalformattedElementException("Run execution request without execution ID");
 		if (experimentDescriptorId == null) throw new MalformattedElementException("Run execution request without expD ID");
 		if (nsInstanceId == null) throw new MalformattedElementException("Run execution request without NS instance ID");
+		if (tenantId == null) throw new MalformattedElementException("Run execution request without tenant ID");
+		if (experimentId == null) throw new MalformattedElementException("Run execution request without experiment ID");
 	}
 
 }

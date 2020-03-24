@@ -35,4 +35,6 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
 	List<Experiment> findByTenantIdAndExperimentDescriptorId(String tenantId, String expDId);
 	
 	Optional<Experiment> findByTenantIdAndExperimentId(String tenantId, String experimentId);
+
+	List<Experiment> findAll();
 }

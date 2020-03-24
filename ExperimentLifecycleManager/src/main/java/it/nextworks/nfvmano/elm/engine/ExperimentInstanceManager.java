@@ -25,6 +25,9 @@ import java.util.UUID;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import it.nextworks.nfvmano.elm.im.Experiment;
+import it.nextworks.nfvmano.elm.sbi.ticketing.TicketOperationException;
+import it.nextworks.nfvmano.libs.ifa.common.exceptions.NotExistingEntityException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,6 +89,8 @@ import it.nextworks.nfvmano.nfvodriver.NfvoLcmService;
 import it.nextworks.nfvmano.nfvodriver.NsStatusChange;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
+import javax.annotation.PostConstruct;
+
 public class ExperimentInstanceManager {
 
 	private static final Logger log = LoggerFactory.getLogger(ExperimentInstanceManager.class);
@@ -124,16 +129,16 @@ public class ExperimentInstanceManager {
 	List<MonitoringDataItem> monitoringKpis = new ArrayList<>();
 	
 	public ExperimentInstanceManager(String experimentId,
-			ExpDescriptor experimentDescriptor,
-			String tenantId,
-			List<EveSite> targetSites,
-			ExperimentLifecycleManagerEngine engine,
-			ExperimentRecordsManager experimentRecordManager,
-			TicketingSystemService ticketingSystemService,
-			SbiExperimentCatalogueService sbiExperimentCatalogueService,
-			NfvoLcmService nfvoLcmService,
-			DataCollectionManagerDriver dcmDriver,
-			EemService eemService) {
+									 ExpDescriptor experimentDescriptor,
+									 String tenantId,
+									 List<EveSite> targetSites,
+									 ExperimentLifecycleManagerEngine engine,
+									 ExperimentRecordsManager experimentRecordManager,
+									 TicketingSystemService ticketingSystemService,
+									 SbiExperimentCatalogueService sbiExperimentCatalogueService,
+									 NfvoLcmService nfvoLcmService,
+									 DataCollectionManagerDriver dcmDriver,
+									 EemService eemService) {
 		this.experimentId = experimentId;
 		this.experimentDescriptor = experimentDescriptor;
 		this.tenantId = tenantId;
@@ -143,6 +148,9 @@ public class ExperimentInstanceManager {
 		this.experimentRecordManager = experimentRecordManager;
 		this.ticketingSystemService = ticketingSystemService;
 		this.lcTicketId = null;
+		this.msnoSubscriptionId=null;
+		this.eemSubscriptionId = null;
+
 		this.sbiExperimentCatalogueService = sbiExperimentCatalogueService;
 		this.nfvoLcmService = nfvoLcmService;
 		this.dcmDriver = dcmDriver;
@@ -164,6 +172,7 @@ public class ExperimentInstanceManager {
 			String nsInstanceId,
 			String currentExecutionId,
 			String eemSubscriptionId,
+			String msnoSubscriptionId,
 			ExperimentLifecycleManagerEngine engine,
 			ExperimentRecordsManager experimentRecordManager,
 			TicketingSystemService ticketingSystemService,
@@ -178,6 +187,7 @@ public class ExperimentInstanceManager {
 		if (targetSites != null) this.targetSites = targetSites;
 		this.nsInstanceId = nsInstanceId;
 		this.eemSubscriptionId = eemSubscriptionId;
+		this.msnoSubscriptionId = msnoSubscriptionId;
 		this.currentExecutionId = currentExecutionId;
 		this.engine = engine;
 		this.experimentRecordManager = experimentRecordManager;
@@ -300,10 +310,18 @@ public class ExperimentInstanceManager {
     		log.debug("Scheduling request for experiment " + experimentId + " in wrong status. Skipping.");
     		return;
     	}
-    	String ticketId = ticketingSystemService.createSchedulingTicket(experimentId, experimentDescriptor, msg.getRequest().getProposedTimeSlot());
-    	log.debug("Generated ticket " + ticketId + " to notify the site manager.");
-    	experimentRecordManager.setLcTicketId(experimentId, ticketId);
-    }
+		try {
+			Experiment experiment=experimentRecordManager.retrieveExperimentFromId(experimentId);
+			String ticketId = ticketingSystemService.createSchedulingTicket(experiment, experimentDescriptor, msg.getRequest().getProposedTimeSlot());
+			log.debug("Generated ticket " + ticketId + " to notify the site manager.");
+			experimentRecordManager.setLcTicketId(experimentId, ticketId);
+		} catch (NotExistingEntityException e) {
+			log.error("Error retrieving experiment, this should not happen:", e);
+		} catch (TicketOperationException e) {
+			log.error("Error creating experiment thicket" , e);
+		}
+
+	}
     
     private void processStatusChangeRequest(UpdateExperimentStateInternalMessage msg) {
     	log.debug("Internal processing request to change the status of experiment " + experimentId);
@@ -311,8 +329,12 @@ public class ExperimentInstanceManager {
     	status = msg.getRequest().getStatus();
     	experimentRecordManager.setExperimentStatus(experimentId, msg.getRequest().getStatus());
     	log.debug("Set new status in DB");
-    	ticketingSystemService.updateSchedulingTicket(lcTicketId, getLcTicketTypeFromTargetState(msg.getRequest().getStatus()));
-    }
+		try {
+			ticketingSystemService.updateSchedulingTicket(lcTicketId, getLcTicketTypeFromTargetState(msg.getRequest().getStatus()));
+		} catch (TicketOperationException e) {
+			log.error("Failed to update ticket status:", e);
+		}
+	}
     
     private static String getNsDescriptorId(String nsdIdentifier, String dfId, String ilId){
         String seed = nsdIdentifier + "_" + dfId + "_" + ilId;
@@ -350,10 +372,11 @@ public class ExperimentInstanceManager {
 			SubscribeRequest subscribeRequest = new SubscribeRequest(filter, null);	//the callback is filled automatically by the driver
 			String subscriptionId = nfvoLcmService.subscribeNsLcmEvents(subscribeRequest, null);		//mgt of subscriptions via REST controller still to be implemented
 			this.msnoSubscriptionId = subscriptionId;
+
 			log.debug("Created subscription with ID " + subscriptionId);
 			*/
     		
-    		
+    		experimentRecordManager.setExperimentCurrentMsnoSubscriptionId(experimentId, this.msnoSubscriptionId);
     		
     		Map<String, String> additionalParamForNs = new HashMap<String, String>();
     		String dst = "";
@@ -417,13 +440,24 @@ public class ExperimentInstanceManager {
     		String executionName = msg.getRequest().getExecutionName();
     		log.debug("Created experiment execution " + executionName + " with ID " + currentExecutionId + " for experiment " + experimentId);
     		eemSubscriptionId = eemService.subscribe(currentExecutionId, engine);
+    		experimentRecordManager.setExperimentCurrentEemSubscriptionId(experimentId, eemSubscriptionId);
     		log.debug("Created subscription " + eemSubscriptionId + " for execution " + currentExecutionId);
+    		List<String> siteNames = new ArrayList<>();
+    		siteNames.add(targetSites.get(0).toString());
     		experimentRecordManager.createExperimentExecution(experimentId, 
     				currentExecutionId,
     				executionName,
     				msg.getRequest().getTestCaseDescriptorConfiguration(), 
     				eemSubscriptionId);
-    		eemService.runExperimentExecution(new RunExecutionRequest(currentExecutionId, experimentDescriptor.getExpDescriptorId(), msg.getRequest().getTestCaseDescriptorConfiguration(), nsInstanceId));
+    		eemService.runExperimentExecution(new RunExecutionRequest(
+    												currentExecutionId,
+													experimentDescriptor.getExpDescriptorId(),
+													msg.getRequest().getTestCaseDescriptorConfiguration(),
+													nsInstanceId,
+													tenantId,
+													siteNames,
+													experimentId
+					));
     		log.debug("Requested execution run to EEM");
     	} catch (Exception e) {
     		log.error("Error while requesting the experiment execution: " + e.getMessage());
@@ -661,5 +695,8 @@ public class ExperimentInstanceManager {
 		}
 		}
     }
+
+
+
     
 }

@@ -16,12 +16,10 @@
 package it.nextworks.nfvmano.elm.engine;
 
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import it.nextworks.nfvmano.elm.im.ExperimentExecutionStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.BindingBuilder;
@@ -80,6 +78,7 @@ import it.nextworks.nfvmano.nfvodriver.NfvoLcmNotificationConsumerInterface;
 import it.nextworks.nfvmano.nfvodriver.NfvoLcmService;
 import it.nextworks.nfvmano.nfvodriver.NsStatusChange;
 
+import javax.annotation.PostConstruct;
 
 
 @Service
@@ -399,7 +398,8 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 	
 	private void initNewExperimentInstanceManager(String experimentId, ExpDescriptor experimentDescriptor, String tenantId, List<EveSite> targetSites) {
 		log.debug("Initializing new experiment instance manager with id " + experimentId);
-		ExperimentInstanceManager eim = new ExperimentInstanceManager(experimentId, 
+		ExperimentInstanceManager eim = new ExperimentInstanceManager(
+				experimentId,
 				experimentDescriptor, 
 				tenantId,
 				targetSites,
@@ -446,5 +446,86 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 		mapper.setSerializationInclusion(Include.NON_EMPTY);
 		mapper.registerModule(new JavaTimeModule());
 		return mapper;
+	}
+
+	private void initActiveExperimentInstanceManager(String experimentId,
+													 String lcTicketId,
+													 String nsInstanceId,
+													 String currentExecutionId,
+													 String eemSubscriptionId,
+													 String msnoSubscriptionId,
+													 ExperimentStatus status, ExpDescriptor experimentDescriptor, String tenantId, List<EveSite> targetSites) {
+		log.debug("Initializing active experiment instance manager with id " + experimentId);
+		ExperimentInstanceManager eim = new ExperimentInstanceManager(
+				experimentId,
+				experimentDescriptor,
+				tenantId,
+				targetSites,
+				status,
+				lcTicketId,
+				nsInstanceId,
+				currentExecutionId,
+				eemSubscriptionId,
+				msnoSubscriptionId,
+				this,
+				experimentRecordManager,
+				ticketingSystemService,
+				sbiExperimentCatalogueService,
+				nfvoLcmService,
+				dcmDriver,
+				eemService
+		);
+		createQueue(experimentId, eim);
+		experimentInstances.put(experimentId, eim);
+		log.debug("Experiment instance manager for ID " + experimentId + " initialized.");
+	}
+
+
+
+
+
+	@PostConstruct
+	private void recreateExperimentInstanceManagersFromDB(){
+		log.debug("Recreating Experiment Instance Managers From DB");
+		List<Experiment> activeExperiments = experimentRecordManager.retrieveAllActiveExperiments();
+		for (Experiment current: activeExperiments){
+			log.debug("Recreating Experiment Instance Manager for: "+current);
+			String experimentId = current.getExperimentId();
+			String expDescriptorId = current.getExperimentDescriptorId();
+			Map<String,String> parameters = new HashMap<>();
+			parameters.put("ExpD_ID", expDescriptorId);
+			Filter filter = new Filter(parameters);
+			QueryExpDescriptorResponse expD = null;
+			try {
+				expD = sbiExperimentCatalogueService.queryExpDescriptor(new GeneralizedQueryRequest(filter, null));
+			} catch (Exception e) {
+				log.error("Error retrieving ExperimentDescriptor from active Experiment!",e);
+			}
+			if (expD==null || expD.getExpDescriptors().isEmpty()) {
+				log.error("Experiment Descriptor from active experiment not found:"+current.getExperimentId()+" ExpDescriptor:"+expDescriptorId);
+
+			}else{
+				ExpDescriptor experimentDescriptor = expD.getExpDescriptors().get(0);
+				String lcTicketId = current.getLcTicketId();
+				String nsInstanceId = current.getNfvNsInstanceId();
+				String currentExecutionId  = current.getCurrentExecutionId();
+				String eemSubscriptionId = current.getCurrentEemSubscriptionId();
+				String msnoSubscriptionId = current.getCurrentMsnoSubscriptionId();
+				initActiveExperimentInstanceManager(experimentId,
+						lcTicketId,
+						nsInstanceId,
+						currentExecutionId,
+						eemSubscriptionId,
+						msnoSubscriptionId,
+						current.getStatus(),
+						experimentDescriptor,
+						current.getTenantId(),
+						current.getTargetSites());
+				log.debug("Succesfully recreated Experiment Instance Managers for experiment:"+experimentId);
+			}
+
+		}
+
+
 	}
 }
