@@ -33,6 +33,7 @@ import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -82,6 +83,7 @@ import javax.annotation.PostConstruct;
 
 
 @Service
+@DependsOn("SbiExperimentCatalogueService")
 public class ExperimentLifecycleManagerEngine 
 implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsumerInterface, EemConsumerInterface {
 

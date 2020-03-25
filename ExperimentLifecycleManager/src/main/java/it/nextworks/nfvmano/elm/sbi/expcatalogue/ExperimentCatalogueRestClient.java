@@ -144,7 +144,7 @@ public class ExperimentCatalogueRestClient {
 			}
 			
 		} catch (Exception e) {
-			log.debug("Error while interacting with portal catalogue.");
+			log.debug("Error while interacting with portal catalogue.", e);
 			throw new FailedOperationException("Error while interacting with portal catalogue at url " + url);
 		}
 	}
