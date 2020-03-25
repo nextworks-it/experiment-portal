@@ -119,6 +119,15 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 	
 	@Autowired
 	private EemService eemService;
+
+
+	/**
+	 * Since ExpDs cannot be retrieved on PostConstruct due to the need of the authentication principal
+	 * the following list contains the list of instance managers that need to be updated after being
+	 * recreated
+	 */
+
+	private List<String> recreatedInstanceManagers = new ArrayList<>();
 	
 	public ExperimentLifecycleManagerEngine() {	
 		//TODO: rebuild experimet map from db when restarting
@@ -388,6 +397,11 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 			log.error("Experiment " + experimentId + " does not exist.");
 			throw new NotExistingEntityException("Experiment " + experimentId + " does not exist.");
 		}
+
+		if(recreatedInstanceManagers.contains(experimentId)){
+			boolean recovered =recoverExperimentInstanceManager(experimentId);
+			if(recovered) recreatedInstanceManagers.remove(experimentId);
+		}
 		return eim;
 	}
 	
@@ -483,7 +497,24 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 	}
 
 
+	private boolean recoverExperimentInstanceManager(String experimentId) throws NotExistingEntityException {
+		log.debug("Recovering Experiment Instance Manager ExpD for: "+experimentId);
+		ExperimentInstanceManager eim = this.experimentInstances.get(experimentId);
+		QueryExpDescriptorResponse expD = null;
+		Experiment experiment = experimentRecordManager.retrieveExperimentFromId(experimentId);
+		Map<String,String> parameters = new HashMap<>();
+		parameters.put("ExpD_ID", experiment.getExperimentDescriptorId());
+		Filter filter = new Filter(parameters);
+		try {
+				expD = sbiExperimentCatalogueService.queryExpDescriptor(new GeneralizedQueryRequest(filter, null));
+				eim.setExperimentDescriptor(expD.getExpDescriptors().get(0));
+				return true;
+		} catch (Exception e) {
+				log.error("Error retrieving ExperimentDescriptor from active Experiment!",e);
+				return false;
+		}
 
+	}
 
 
 	@PostConstruct
@@ -494,25 +525,10 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 		for (Experiment current: activeExperiments){
 			log.debug("Recreating Experiment Instance Manager for: "+current);
 			String experimentId = current.getExperimentId();
-			String expDescriptorId = current.getExperimentDescriptorId();
-			Map<String,String> parameters = new HashMap<>();
-			parameters.put("ExpD_ID", expDescriptorId);
-			Filter filter = new Filter(parameters);
-			QueryExpDescriptorResponse expD = null;
-			try {
-				expD = sbiExperimentCatalogueService.queryExpDescriptor(new GeneralizedQueryRequest(filter, null));
-			} catch (Exception e) {
-				log.error("Error retrieving ExperimentDescriptor from active Experiment!",e);
-			}
+			//String expDescriptorId = current.getExperimentDescriptorId();
+
 			ExpDescriptor experimentDescriptor = null;
 			ExperimentStatus status = current.getStatus();
-			if (expD==null || expD.getExpDescriptors().isEmpty()) {
-				log.error("Experiment Descriptor from active experiment not found:"+current.getExperimentId()+" ExpDescriptor:"+expDescriptorId);
-				log.error("Creating FAILED instance manager for"+current.getExperimentId());
-			}else {
-				experimentDescriptor = expD.getExpDescriptors().get(0);
-				status=ExperimentStatus.FAILED;
-			}
 			String lcTicketId = current.getLcTicketId();
 			String nsInstanceId = current.getNfvNsInstanceId();
 			String currentExecutionId  = current.getCurrentExecutionId();
@@ -525,9 +541,10 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 					eemSubscriptionId,
 					msnoSubscriptionId,
 					status,
-					experimentDescriptor,
+					null, //To be recovered later
 					current.getTenantId(),
 					current.getTargetSites());
+			recreatedInstanceManagers.add(experimentId);
 			log.debug("Succesfully recreated Experiment Instance Managers for experiment:"+experimentId);
 
 		}

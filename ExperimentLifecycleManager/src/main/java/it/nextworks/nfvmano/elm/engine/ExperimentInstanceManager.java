@@ -672,8 +672,13 @@ public class ExperimentInstanceManager {
 		Filter filter = new Filter(parameters);
 		return new GeneralizedQueryRequest(filter, null);
     }
-        
-    private void manageExpError(String errorMessage) {
+
+
+	public void setExperimentDescriptor(ExpDescriptor experimentDescriptor) {
+		this.experimentDescriptor = experimentDescriptor;
+	}
+
+	private void manageExpError(String errorMessage) {
         log.error(errorMessage);
         this.status = ExperimentStatus.FAILED;
         experimentRecordManager.setExperimentError(experimentId, errorMessage);
