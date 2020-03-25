@@ -502,28 +502,31 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 			} catch (Exception e) {
 				log.error("Error retrieving ExperimentDescriptor from active Experiment!",e);
 			}
+			ExpDescriptor experimentDescriptor = null;
+			ExperimentStatus status = current.getStatus();
 			if (expD==null || expD.getExpDescriptors().isEmpty()) {
 				log.error("Experiment Descriptor from active experiment not found:"+current.getExperimentId()+" ExpDescriptor:"+expDescriptorId);
-
-			}else{
-				ExpDescriptor experimentDescriptor = expD.getExpDescriptors().get(0);
-				String lcTicketId = current.getLcTicketId();
-				String nsInstanceId = current.getNfvNsInstanceId();
-				String currentExecutionId  = current.getCurrentExecutionId();
-				String eemSubscriptionId = current.getCurrentEemSubscriptionId();
-				String msnoSubscriptionId = current.getCurrentMsnoSubscriptionId();
-				initActiveExperimentInstanceManager(experimentId,
-						lcTicketId,
-						nsInstanceId,
-						currentExecutionId,
-						eemSubscriptionId,
-						msnoSubscriptionId,
-						current.getStatus(),
-						experimentDescriptor,
-						current.getTenantId(),
-						current.getTargetSites());
-				log.debug("Succesfully recreated Experiment Instance Managers for experiment:"+experimentId);
+				log.error("Creating FAILED instance manager for"+current.getExperimentId());
+			}else {
+				experimentDescriptor = expD.getExpDescriptors().get(0);
+				status=ExperimentStatus.FAILED;
 			}
+			String lcTicketId = current.getLcTicketId();
+			String nsInstanceId = current.getNfvNsInstanceId();
+			String currentExecutionId  = current.getCurrentExecutionId();
+			String eemSubscriptionId = current.getCurrentEemSubscriptionId();
+			String msnoSubscriptionId = current.getCurrentMsnoSubscriptionId();
+			initActiveExperimentInstanceManager(experimentId,
+					lcTicketId,
+					nsInstanceId,
+					currentExecutionId,
+					eemSubscriptionId,
+					msnoSubscriptionId,
+					status,
+					experimentDescriptor,
+					current.getTenantId(),
+					current.getTargetSites());
+			log.debug("Succesfully recreated Experiment Instance Managers for experiment:"+experimentId);
 
 		}
 		log.debug("Finished recreating Experiment Instance Managers");
