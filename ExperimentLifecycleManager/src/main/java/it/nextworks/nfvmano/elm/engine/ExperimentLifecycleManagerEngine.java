@@ -488,6 +488,7 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 	private void recreateExperimentInstanceManagersFromDB(){
 		log.debug("Recreating Experiment Instance Managers From DB");
 		List<Experiment> activeExperiments = experimentRecordManager.retrieveAllActiveExperiments();
+		if(activeExperiments.isEmpty()) log.debug("No active experiments retrieved");
 		for (Experiment current: activeExperiments){
 			log.debug("Recreating Experiment Instance Manager for: "+current);
 			String experimentId = current.getExperimentId();
@@ -525,7 +526,7 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 			}
 
 		}
-
+		log.debug("Finished recreating Experiment Instance Managers");
 
 	}
 }
