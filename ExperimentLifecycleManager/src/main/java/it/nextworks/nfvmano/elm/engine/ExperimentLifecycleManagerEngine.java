@@ -83,7 +83,7 @@ import javax.annotation.PostConstruct;
 
 
 @Service
-@DependsOn("SbiExperimentCatalogueService")
+
 public class ExperimentLifecycleManagerEngine 
 implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsumerInterface, EemConsumerInterface {
 
