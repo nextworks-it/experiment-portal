@@ -425,7 +425,7 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 				sbiExperimentCatalogueService,
 				nfvoLcmService,
 				dcmDriver,
-				eemService);
+				eemService, true);
 		createQueue(experimentId, eim);
 		experimentInstances.put(experimentId, eim);
 		log.debug("Experiment instance manager for ID " + experimentId + " initialized.");
@@ -489,7 +489,7 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 				sbiExperimentCatalogueService,
 				nfvoLcmService,
 				dcmDriver,
-				eemService
+				eemService, false
 		);
 		createQueue(experimentId, eim);
 		experimentInstances.put(experimentId, eim);
@@ -507,7 +507,7 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 		Filter filter = new Filter(parameters);
 		try {
 				expD = sbiExperimentCatalogueService.queryExpDescriptor(new GeneralizedQueryRequest(filter, null));
-				eim.setExperimentDescriptor(expD.getExpDescriptors().get(0));
+				eim.loadInformationFromPortalCatalogue(expD.getExpDescriptors().get(0));
 				return true;
 		} catch (Exception e) {
 				log.error("Error retrieving ExperimentDescriptor from active Experiment!",e);

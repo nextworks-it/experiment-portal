@@ -138,7 +138,8 @@ public class ExperimentInstanceManager {
 									 SbiExperimentCatalogueService sbiExperimentCatalogueService,
 									 NfvoLcmService nfvoLcmService,
 									 DataCollectionManagerDriver dcmDriver,
-									 EemService eemService) {
+									 EemService eemService,
+									 boolean loadFromCatalogue) {
 		this.experimentId = experimentId;
 		this.experimentDescriptor = experimentDescriptor;
 		this.tenantId = tenantId;
@@ -156,7 +157,7 @@ public class ExperimentInstanceManager {
 		this.dcmDriver = dcmDriver;
 		this.eemService = eemService;
 		try {
-    		loadInformationFromPortalCatalogue();
+    		 if(loadFromCatalogue) loadInformationFromPortalCatalogue();
     	} catch (Exception e) {
     		log.error("Error while retrieving information from portal catalogue: " + e.getMessage());
     		manageExpError("Error while retrieving information from portal catalogue: " + e.getMessage());
@@ -179,7 +180,8 @@ public class ExperimentInstanceManager {
 			SbiExperimentCatalogueService sbiExperimentCatalogueService,
 			NfvoLcmService nfvoLcmService,
 			DataCollectionManagerDriver dcmDriver,
-			EemService eemService) {
+			EemService eemService,
+									 boolean loadFromCatalogue) {
 		this.experimentId = experimentId;
 		this.experimentDescriptor = experimentDescriptor;
 		this.tenantId = tenantId;
@@ -198,7 +200,7 @@ public class ExperimentInstanceManager {
 		this.dcmDriver = dcmDriver;
 		this.eemService = eemService;
 		try {
-    		loadInformationFromPortalCatalogue();
+			if(loadFromCatalogue) loadInformationFromPortalCatalogue();
     	} catch (Exception e) {
     		log.error("Error while retrieving information from portal catalogue: " + e.getMessage());
     		manageExpError("Error while retrieving information from portal catalogue: " + e.getMessage());
@@ -665,6 +667,11 @@ public class ExperimentInstanceManager {
     	
     	log.debug("Loaded all the blueprints and descriptor information from portal catalogue");
     }
+
+    public void loadInformationFromPortalCatalogue(ExpDescriptor experimentDescriptor) throws Exception {
+		this.experimentDescriptor = experimentDescriptor;
+		loadInformationFromPortalCatalogue();
+	}
     
     private GeneralizedQueryRequest buildQueryForParameter(String parameterName, String parameterValue) {
     	Map<String,String> parameters = new HashMap<>();
