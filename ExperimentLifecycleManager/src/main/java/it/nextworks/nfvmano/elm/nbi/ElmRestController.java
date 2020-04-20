@@ -78,6 +78,28 @@ public class ElmRestController {
 
 	}
 
+
+	private  String getMailFromAuth(Authentication auth) {
+		if(authenticationEnable){
+			if(keycloakEnabled){
+				if (auth.getPrincipal() instanceof KeycloakPrincipal) {
+					KeycloakPrincipal<KeycloakSecurityContext> kp = (KeycloakPrincipal<KeycloakSecurityContext>) auth.getPrincipal();
+					// retrieving username here
+					return kp.getKeycloakSecurityContext().getToken().getEmail();
+				}else return null;
+			}else{
+				Object principal = auth.getPrincipal();
+				if (!UserDetails.class.isAssignableFrom(principal.getClass())) {
+					throw new IllegalArgumentException("Auth.getPrincipal() does not implement UserDetails");
+				}
+
+				return ((UserDetails) principal).getUsername();
+			}
+
+		}else return adminTenant;
+
+	}
+
 	private  boolean validateAuthentication(Authentication auth){
 		return !authenticationEnable || auth!=null;
 
@@ -97,9 +119,9 @@ public class ElmRestController {
 			return new ResponseEntity<>("Unauthorized", HttpStatus.UNAUTHORIZED);
 		}
 		String user = getUserFromAuth(auth);
-		
+		String email = getMailFromAuth(auth);
 		try {
-			String experimentId = engine.scheduleNewExperiment(request, user);
+			String experimentId = engine.scheduleNewExperiment(request, user, email);
 			return new ResponseEntity<String>(experimentId, HttpStatus.CREATED);
 		} catch (NotExistingEntityException e) {
 			log.error("Something not found: " + e.getMessage());

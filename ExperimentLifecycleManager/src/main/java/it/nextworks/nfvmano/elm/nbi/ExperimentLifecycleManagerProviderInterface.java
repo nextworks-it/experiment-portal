@@ -37,13 +37,14 @@ public interface ExperimentLifecycleManagerProviderInterface {
 	 * 
 	 * @param request request with the details of the experiment and the proposed timeslot
 	 * @param tenantId ID of the tenant requesting the service
+	 * @param tenantEmail email of the tenant requesting the service
 	 * @return the ID of the experiment instance
 	 * @throws NotExistingEntityException if the experiment descriptor does not exist
 	 * @throws MalformattedElementException if the request is malformed
 	 * @throws FailedOperationException if the operation fails
 	 * @throws MethodNotImplementedException if the method is not implemented
 	 */
-	public String scheduleNewExperiment(ExperimentSchedulingRequest request, String tenantId) 
+	public String scheduleNewExperiment(ExperimentSchedulingRequest request, String tenantId, String tenantEmail)
 			throws NotExistingEntityException, MalformattedElementException, FailedOperationException, MethodNotImplementedException; 
 
 	/**

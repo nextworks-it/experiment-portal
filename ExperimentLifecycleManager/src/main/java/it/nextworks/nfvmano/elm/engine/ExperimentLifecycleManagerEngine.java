@@ -137,7 +137,7 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 	}
 	
 	@Override
-	public String scheduleNewExperiment(ExperimentSchedulingRequest request, String tenantId) 
+	public String scheduleNewExperiment(ExperimentSchedulingRequest request, String tenantId, String tenantEmail)
 			throws NotExistingEntityException, MalformattedElementException, FailedOperationException, MethodNotImplementedException {
 		request.isValid();
 		String expDescriptorId = request.getExperimentDescriptorId();
@@ -157,7 +157,7 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 			sbiExperimentCatalogueService.useExpDescriptor(request.getExperimentDescriptorId(), experimentId);
 			initNewExperimentInstanceManager(experimentId, expD.getExpDescriptors().get(0), tenantId, request.getTargetSites());
 			String topic = "lifecycle.schedule." + experimentId;
-			ScheduleExperimentInternalMessage internalMessage = new ScheduleExperimentInternalMessage(experimentId, request, tenantId);
+			ScheduleExperimentInternalMessage internalMessage = new ScheduleExperimentInternalMessage(experimentId, request, tenantEmail);
 			try {
 				sendMessageToQueue(internalMessage, topic);
 			} catch (JsonProcessingException e) {
