@@ -416,7 +416,7 @@ public class ExperimentCatalogueRestClient {
 			log.debug("Sending HTTP request to retrieve experiment descriptor translation into NFV NS.");
 
 			ResponseEntity<String> httpResponse =
-					noAuthRestTemplate.exchange(url, HttpMethod.POST, getEntity, String.class);
+					restTemplate.exchange(url, HttpMethod.POST, getEntity, String.class);
 
 			log.debug("Response code: " + httpResponse.getStatusCode().toString());
 			HttpStatus code = httpResponse.getStatusCode();
@@ -452,7 +452,7 @@ public class ExperimentCatalogueRestClient {
 			log.debug("Sending HTTP request to release the experiment descriptor:"+expdId+" from experiment:"+experimentId);
 
 			ResponseEntity<String> httpResponse =
-					noAuthRestTemplate.exchange(url, HttpMethod.POST, getEntity, String.class);
+					restTemplate.exchange(url, HttpMethod.POST, getEntity, String.class);
 
 			log.debug("Response code: " + httpResponse.getStatusCode().toString());
 			HttpStatus code = httpResponse.getStatusCode();
