@@ -121,6 +121,9 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 	private EemService eemService;
 
 
+    @Value("#{${ticketing.addresses}}")
+    private Map<String, String> ticketingAddresses;
+
 	/**
 	 * Since ExpDs cannot be retrieved on PostConstruct due to the need of the authentication principal
 	 * the following list contains the list of instance managers that need to be updated after being
@@ -149,17 +152,24 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 			throw new NotExistingEntityException("Experiment Descriptor Not Found");
 		}
 		String experimentId = experimentRecordManager.createExperiment(expDescriptorId, request.getExperimentName(), tenantId, request.getProposedTimeSlot(), request.getTargetSites());
-		initNewExperimentInstanceManager(experimentId, expD.getExpDescriptors().get(0), tenantId, request.getTargetSites());
-		String topic = "lifecycle.schedule." + experimentId;
-		ScheduleExperimentInternalMessage internalMessage = new ScheduleExperimentInternalMessage(experimentId, request);
 		try {
-			sendMessageToQueue(internalMessage, topic);
-		} catch (JsonProcessingException e) {
-			log.error("Error while translating internal scheduling message in Json format.");
-			this.experimentInstances.remove(experimentId);
-			throw new FailedOperationException("Internal error with queues.");
+
+			sbiExperimentCatalogueService.useExpDescriptor(request.getExperimentDescriptorId(), experimentId);
+			initNewExperimentInstanceManager(experimentId, expD.getExpDescriptors().get(0), tenantId, request.getTargetSites());
+			String topic = "lifecycle.schedule." + experimentId;
+			ScheduleExperimentInternalMessage internalMessage = new ScheduleExperimentInternalMessage(experimentId, request, tenantId);
+			try {
+				sendMessageToQueue(internalMessage, topic);
+			} catch (JsonProcessingException e) {
+				log.error("Error while translating internal scheduling message in Json format.");
+				this.experimentInstances.remove(experimentId);
+				throw new FailedOperationException("Internal error with queues.");
+			}
+			return experimentId;
+		}catch(Exception e){
+			log.error("Error assigning experiment:"+experimentId+" to ExpD:"+expDescriptorId, e);
+			throw new FailedOperationException("Error assigning experiment:"+experimentId+" to ExpD:"+expDescriptorId, e);
 		}
-		return experimentId;
 	}
 
 	@Override
@@ -232,7 +242,7 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 		}
 		//TODO: check the permission based on the tenant role. This action should be permitted only to the site manager of the facility where the experiment will run
 		String topic = "lifecycle.changestate." + experimentId;
-		UpdateExperimentStateInternalMessage internalMessage = new UpdateExperimentStateInternalMessage(request);
+		UpdateExperimentStateInternalMessage internalMessage = new UpdateExperimentStateInternalMessage(request, tenantId);
 		try {
 			sendMessageToQueue(internalMessage, topic);
 		} catch (JsonProcessingException e) {
@@ -337,6 +347,15 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 			log.error("The system cannot remove experiment " + experimentId + " since it is not in TERMINATED or FAILED state.");
 			throw new WrongStatusException("The system cannot terminate experiment " + experimentId + " since it is not in TERMINATED or FAILED state.");
 		}
+		Experiment exp = experimentRecordManager.retrieveExperimentFromId(experimentId);
+		String expdId = exp.getExperimentDescriptorId();
+		log.debug("Releasing ExpD: "+expdId+" from experiment:"+experimentId);
+		try{
+			sbiExperimentCatalogueService.releaseExpDescriptor(expdId, experimentId);
+		}catch (Exception e){
+			log.error("Error assigning experiment:"+experimentId+" to ExpD:"+expdId, e);
+			throw new FailedOperationException("Error assigning experiment:"+experimentId+" to ExpD:"+expdId, e);
+		}
 		experimentInstances.remove(experimentId);
 		experimentRecordManager.removeExperiment(experimentId);
 	}
@@ -425,7 +444,9 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 				sbiExperimentCatalogueService,
 				nfvoLcmService,
 				dcmDriver,
-				eemService, true);
+				eemService,
+                true,
+                ticketingAddresses);
 		createQueue(experimentId, eim);
 		experimentInstances.put(experimentId, eim);
 		log.debug("Experiment instance manager for ID " + experimentId + " initialized.");
@@ -465,7 +486,7 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 	}
 
 	private void initActiveExperimentInstanceManager(String experimentId,
-													 String lcTicketId,
+													 List<String> lcTicketId,
 													 String nsInstanceId,
 													 String currentExecutionId,
 													 String eemSubscriptionId,
@@ -489,7 +510,9 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 				sbiExperimentCatalogueService,
 				nfvoLcmService,
 				dcmDriver,
-				eemService, false
+				eemService,
+                false,
+                ticketingAddresses
 		);
 		createQueue(experimentId, eim);
 		experimentInstances.put(experimentId, eim);
@@ -529,7 +552,7 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 
 			ExpDescriptor experimentDescriptor = null;
 			ExperimentStatus status = current.getStatus();
-			String lcTicketId = current.getLcTicketId();
+			List<String> lcTicketId = current.getOpenTicketIds();
 			String nsInstanceId = current.getNfvNsInstanceId();
 			String currentExecutionId  = current.getCurrentExecutionId();
 			String eemSubscriptionId = current.getCurrentEemSubscriptionId();

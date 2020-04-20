@@ -25,11 +25,15 @@ public class UpdateExperimentStateInternalMessage extends InternalMessage {
 	@JsonProperty("request")
 	private UpdateExperimentStatusRequest request;
 
+    @JsonProperty("requester")
+    private String requester;
+
 	
 	@JsonCreator
-	public UpdateExperimentStateInternalMessage(@JsonProperty("request") UpdateExperimentStatusRequest request) {
+	public UpdateExperimentStateInternalMessage(@JsonProperty("request") UpdateExperimentStatusRequest request, @JsonProperty("requester") String requester) {
 		this.type = InternalMessageType.UPDATE_STATE_REQUEST;
 		this.request = request;
+		this.requester=requester;
 	}
 
 
@@ -39,6 +43,13 @@ public class UpdateExperimentStateInternalMessage extends InternalMessage {
 	public UpdateExperimentStatusRequest getRequest() {
 		return request;
 	}
+
+    /**
+     * @return the requester
+     */
+    public String getRequester() {
+        return requester;
+    }
 	
 	
 

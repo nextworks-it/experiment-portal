@@ -98,7 +98,7 @@ public class ExperimentInstanceManager {
 	private String experimentId; 
 	private ExpDescriptor experimentDescriptor;
 	private ExperimentStatus status;
-	private String lcTicketId;
+	//private String lcTicketId;
 	private List<EveSite> targetSites = new ArrayList<EveSite>();
 	private String tenantId;
 	private String nsInstanceId;
@@ -122,11 +122,17 @@ public class ExperimentInstanceManager {
 	private VsDescriptor vsDescriptor;
 	private List<CtxDescriptor> ctxDescriptors = new ArrayList<>();
 	private List<TestCaseDescriptor> tcDescriptors = new ArrayList<>();
+
 	
 	//Used for monitoring
 	List<MonitoringDataItem> applicationMonitoringMetrics = new ArrayList<>();
 	List<MonitoringDataItem> infrastructureMonitoringMetrics = new ArrayList<>();
 	List<MonitoringDataItem> monitoringKpis = new ArrayList<>();
+
+    private Map<String, String> ticketingAddresses;
+
+
+    private List<String> openTicketIds = new ArrayList<>();
 	
 	public ExperimentInstanceManager(String experimentId,
 									 ExpDescriptor experimentDescriptor,
@@ -139,7 +145,8 @@ public class ExperimentInstanceManager {
 									 NfvoLcmService nfvoLcmService,
 									 DataCollectionManagerDriver dcmDriver,
 									 EemService eemService,
-									 boolean loadFromCatalogue) {
+									 boolean loadFromCatalogue,
+                                     Map<String, String> ticketingAddresses) {
 		this.experimentId = experimentId;
 		this.experimentDescriptor = experimentDescriptor;
 		this.tenantId = tenantId;
@@ -148,7 +155,6 @@ public class ExperimentInstanceManager {
 		this.engine = engine;
 		this.experimentRecordManager = experimentRecordManager;
 		this.ticketingSystemService = ticketingSystemService;
-		this.lcTicketId = null;
 		this.msnoSubscriptionId=null;
 		this.eemSubscriptionId = null;
 
@@ -156,6 +162,7 @@ public class ExperimentInstanceManager {
 		this.nfvoLcmService = nfvoLcmService;
 		this.dcmDriver = dcmDriver;
 		this.eemService = eemService;
+		this.ticketingAddresses=ticketingAddresses;
 		try {
     		 if(loadFromCatalogue) loadInformationFromPortalCatalogue();
     	} catch (Exception e) {
@@ -169,7 +176,7 @@ public class ExperimentInstanceManager {
 			String tenantId,
 			List<EveSite> targetSites,
 			ExperimentStatus status,
-			String lcTicketId,
+			List<String> openTicketIds,
 			String nsInstanceId,
 			String currentExecutionId,
 			String eemSubscriptionId,
@@ -181,7 +188,8 @@ public class ExperimentInstanceManager {
 			NfvoLcmService nfvoLcmService,
 			DataCollectionManagerDriver dcmDriver,
 			EemService eemService,
-									 boolean loadFromCatalogue) {
+									 boolean loadFromCatalogue,
+                                     Map<String,String> ticketingAddresses) {
 		this.experimentId = experimentId;
 		this.experimentDescriptor = experimentDescriptor;
 		this.tenantId = tenantId;
@@ -194,11 +202,12 @@ public class ExperimentInstanceManager {
 		this.engine = engine;
 		this.experimentRecordManager = experimentRecordManager;
 		this.ticketingSystemService = ticketingSystemService;
-		this.lcTicketId = lcTicketId;
+		this.openTicketIds = openTicketIds;
 		this.sbiExperimentCatalogueService = sbiExperimentCatalogueService;
 		this.nfvoLcmService = nfvoLcmService;
 		this.dcmDriver = dcmDriver;
 		this.eemService = eemService;
+		this.ticketingAddresses=ticketingAddresses;
 		try {
 			if(loadFromCatalogue) loadInformationFromPortalCatalogue();
     	} catch (Exception e) {
@@ -314,10 +323,22 @@ public class ExperimentInstanceManager {
     	}
 		try {
 			Experiment experiment=experimentRecordManager.retrieveExperimentFromId(experimentId);
-			String ticketId = ticketingSystemService.createSchedulingTicket(experiment, experimentDescriptor, msg.getRequest().getProposedTimeSlot());
-			log.debug("Generated ticket " + ticketId + " to notify the site manager.");
-			lcTicketId = ticketId;
-			experimentRecordManager.setLcTicketId(experimentId, ticketId);
+			for(EveSite site : experiment.getTargetSites()){
+                if(ticketingAddresses.containsKey(site.toString())){
+                    String siteAdminAddress = ticketingAddresses.get(site.toString());
+                    String ticketId = ticketingSystemService.createSchedulingTicket(experiment, experimentDescriptor, msg.getRequest().getProposedTimeSlot(),
+                            site.toString(), siteAdminAddress,msg.getRequester());
+                    experiment.addTicket(ticketId);
+
+                }else{
+                    log.error("Site admin address not configured, ignoring ticket creation");
+                }
+
+            }
+			log.debug("Experiment: "+experimentId+" saving new list of open ticket:");
+			this.openTicketIds=experiment.getOpenTicketIds();
+			experimentRecordManager.updateExperimentOpenTickets(experimentId, experiment.getOpenTicketIds());
+
 		} catch (NotExistingEntityException e) {
 			log.error("Error retrieving experiment, this should not happen:", e);
 		} catch (TicketOperationException e) {
@@ -333,7 +354,11 @@ public class ExperimentInstanceManager {
     	experimentRecordManager.setExperimentStatus(experimentId, msg.getRequest().getStatus());
     	log.debug("Set new status in DB");
 		try {
-			ticketingSystemService.updateSchedulingTicket(lcTicketId, getLcTicketTypeFromTargetState(msg.getRequest().getStatus()));
+			for(String ticketId : openTicketIds){
+				log.debug("Updating ticket: "+ticketId);
+				ticketingSystemService.updateSchedulingTicket(ticketId, getLcTicketTypeFromTargetState(msg.getRequest().getStatus()), msg.getRequester());
+			}
+
 		} catch (TicketOperationException e) {
 			log.error("Failed to update ticket status:", e);
 		}

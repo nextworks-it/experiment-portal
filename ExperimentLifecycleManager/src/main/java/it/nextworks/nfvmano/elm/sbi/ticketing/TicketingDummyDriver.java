@@ -12,13 +12,13 @@ public class TicketingDummyDriver implements TicketingRestInterface {
     private static final Logger log = LoggerFactory.getLogger(TicketingDummyDriver.class);
 
     @Override
-    public String createSchedulingTicket(Experiment experiment, ExpDescriptor experimentDescriptor, ExperimentExecutionTimeslot timeslot) throws TicketOperationException {
-        log.debug("Creating dummy ticket");
+    public String createSchedulingTicket(Experiment experiment, ExpDescriptor experimentDescriptor, ExperimentExecutionTimeslot timeslot, String eveSiteName,  String siteAdminAddress, String reporter) throws TicketOperationException {
+        log.debug("Creating dummy ticket for site: "+eveSiteName+" - "+siteAdminAddress+" - "+" - " +reporter);
         return UUID.randomUUID().toString();
     }
 
     @Override
-    public void updateSchedulingTicket(String ticketId, LcTicketUpdateType updateType) throws TicketOperationException {
-        log.debug("Updagint dummy ticket: " +ticketId);
+    public void updateSchedulingTicket(String ticketId, LcTicketUpdateType updateType, String reporter) throws TicketOperationException {
+        log.debug("Updagint dummy ticket: " +ticketId+" - "+updateType.toString()+" - "+reporter);
     }
 }

@@ -402,5 +402,77 @@ public class ExperimentCatalogueRestClient {
 			throw new FailedOperationException("Error while interacting with portal catalogue at url " + url);
 		}
 	}
+
+	public void useExpDescriptor(String expdId, String experimentId) throws FailedOperationException {
+
+		log.debug("Building HTTP request for use of Experiment Descriptor with ID " + expdId);
+		HttpHeaders header = new HttpHeaders();
+		header.add("Content-Type", "application/json");
+
+		HttpEntity<?> getEntity = new HttpEntity<>(header);
+
+		String url = catalogueUrl + "/expdescriptor/" +expdId+"/use/"+experimentId;
+		try {
+			log.debug("Sending HTTP request to retrieve experiment descriptor translation into NFV NS.");
+
+			ResponseEntity<String> httpResponse =
+					noAuthRestTemplate.exchange(url, HttpMethod.POST, getEntity, String.class);
+
+			log.debug("Response code: " + httpResponse.getStatusCode().toString());
+			HttpStatus code = httpResponse.getStatusCode();
+
+			if (code.equals(HttpStatus.OK)) {
+				log.debug("Experiment descriptor correctly locked from removal");
+
+			} else if (code.equals(HttpStatus.NOT_FOUND)) {
+				throw new NotExistingEntityException("Error during experiment descriptor translation: " + httpResponse.getBody());
+			} else if (code.equals(HttpStatus.BAD_REQUEST)) {
+				throw new MalformattedElementException("Error during experiment descriptor translation: " + httpResponse.getBody());
+			} else {
+				throw new FailedOperationException("Generic error during ELM interaction with portal catalogue");
+			}
+
+		} catch (Exception e) {
+			log.debug("Error while interacting with portal catalogue.");
+			throw new FailedOperationException("Error while interacting with portal catalogue at url " + url);
+		}
+
+	}
+
+	public void releaseExpDescriptor(String expdId, String experimentId) throws FailedOperationException {
+
+		log.debug("Building HTTP request for use of Experiment Descriptor with ID " + expdId);
+		HttpHeaders header = new HttpHeaders();
+		header.add("Content-Type", "application/json");
+
+		HttpEntity<?> getEntity = new HttpEntity<>(header);
+
+		String url = catalogueUrl + "/expdescriptor/" +expdId+"/release/"+experimentId;
+		try {
+			log.debug("Sending HTTP request to release the experiment descriptor:"+expdId+" from experiment:"+experimentId);
+
+			ResponseEntity<String> httpResponse =
+					noAuthRestTemplate.exchange(url, HttpMethod.POST, getEntity, String.class);
+
+			log.debug("Response code: " + httpResponse.getStatusCode().toString());
+			HttpStatus code = httpResponse.getStatusCode();
+
+			if (code.equals(HttpStatus.OK)) {
+				log.debug("Experiment descriptor released correctly");
+
+			} else if (code.equals(HttpStatus.NOT_FOUND)) {
+				throw new NotExistingEntityException("Error during experiment descriptor release: " + httpResponse.getBody());
+			} else if (code.equals(HttpStatus.BAD_REQUEST)) {
+				throw new MalformattedElementException("Error during experiment descriptor release: " + httpResponse.getBody());
+			} else {
+				throw new FailedOperationException("Generic error during ELM interaction with portal catalogue");
+			}
+
+		} catch (Exception e) {
+			log.debug("Error while interacting with portal catalogue.");
+			throw new FailedOperationException("Error while interacting with portal catalogue at url " + url);
+		}
+
+	}
 	
 }

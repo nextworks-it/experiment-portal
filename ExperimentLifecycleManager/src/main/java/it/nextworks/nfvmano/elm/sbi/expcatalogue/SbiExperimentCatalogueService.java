@@ -333,7 +333,17 @@ implements ExpDescriptorCatalogueInterface, ExpBlueprintCatalogueInterface, Tran
 			throws MethodNotImplementedException, MalformattedElementException, NotExistingEntityException, FailedOperationException {
 		throw new MethodNotImplementedException("The deletion of an experiment descriptor is not allowed through the ELM");
 	}
-	
+
+	@Override
+	public void useExpDescriptor(String expDescriptorId, String experimentId) throws MethodNotImplementedException, MalformattedElementException, NotExistingEntityException, FailedOperationException {
+		experimentCatalogueRestClient.useExpDescriptor(expDescriptorId, experimentId);
+	}
+
+	@Override
+	public void releaseExpDescriptor(String expDescriptorId, String experimentId) throws MethodNotImplementedException, MalformattedElementException, NotExistingEntityException, FailedOperationException {
+		experimentCatalogueRestClient.useExpDescriptor(expDescriptorId, experimentId);
+	}
+
 	@Override
 	public Map<String, NfvNsInstantiationInfo> translateVsd(List<String> vsdIds)
 			throws FailedOperationException, NotExistingEntityException, MethodNotImplementedException {

@@ -61,8 +61,9 @@ public class Experiment {
     private ExperimentStatus status;
     
     private String experimentDescriptorId;
-    
-    private String lcTicketId;
+
+    //Replaced  by the openTicketIds list
+    //private String lcTicketId;
     
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
 	@ElementCollection(fetch=FetchType.EAGER)
@@ -218,9 +219,12 @@ public class Experiment {
 		return tenantId;
 	}
 
-	/**
+
+
+
+	/*
 	 * @return the lcTicketId
-	 */
+
 	public String getLcTicketId() {
 		return lcTicketId;
 	}
@@ -229,11 +233,11 @@ public class Experiment {
 
 	/**
 	 * @param lcTicketId the lcTicketId to set
-	 */
+
 	public void setLcTicketId(String lcTicketId) {
 		this.lcTicketId = lcTicketId;
 	}
-
+	 */
 
 
 	/**
@@ -369,7 +373,8 @@ public class Experiment {
 	public void setExperimentId(String experimentId) {
 		this.experimentId = experimentId;
 	}
-	
+
+
 	public void addTicket(String ticketId) {
 		this.openTicketIds.add(ticketId);
 	}

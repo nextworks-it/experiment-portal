@@ -24,16 +24,20 @@ public class ScheduleExperimentInternalMessage extends InternalMessage {
 
 	@JsonProperty("experimentId")
 	private String experimentId;
+
+	@JsonProperty("requester")
+	private String requester;
 	
 	@JsonProperty("request")
 	private ExperimentSchedulingRequest request;
 	
 	@JsonCreator
 	public ScheduleExperimentInternalMessage(@JsonProperty("experimentId") String experimentId,
-			@JsonProperty("request") ExperimentSchedulingRequest request) {
+			@JsonProperty("request") ExperimentSchedulingRequest request, @JsonProperty("requester") String requester) {
 		this.type = InternalMessageType.SCHEDULE_REQUEST;
 		this.experimentId = experimentId;
 		this.request = request;
+		this.requester =requester;
 	}
 
 	/**
@@ -48,6 +52,15 @@ public class ScheduleExperimentInternalMessage extends InternalMessage {
 	 */
 	public ExperimentSchedulingRequest getRequest() {
 		return request;
+	}
+
+
+
+	/**
+	 * @return the requester
+	 */
+	public String getRequester() {
+		return requester;
 	}
 	
 }

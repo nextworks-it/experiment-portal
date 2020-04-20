@@ -40,14 +40,14 @@ public class TicketingSystemRestClient implements TicketingRestInterface{
 	private String ticketingUrl;
 
 
-	private Map<String, String> ticketingAddresses;
+
 
 
 	private Map<String, ArrayList<SiteTicketRecord>> mapTicketToSiteTicket = new HashMap<>();
 
-	public TicketingSystemRestClient(String ticketingUrl, Map<String, String> ticketingAddresses){
+	public TicketingSystemRestClient(String ticketingUrl){
 		this.ticketingUrl=ticketingUrl;
-		this.ticketingAddresses = ticketingAddresses;
+
 		ticketingClient = new TicketsApi();
 		commentsApi = new CommentsApi();
 		ApiClient apiClient = new ApiClient();
@@ -60,10 +60,10 @@ public class TicketingSystemRestClient implements TicketingRestInterface{
 	
 	public String createSchedulingTicket(Experiment experiment,
 										 ExpDescriptor experimentDescriptor,
-										 ExperimentExecutionTimeslot timeslot) throws TicketOperationException {
+										 ExperimentExecutionTimeslot timeslot, String eveSiteName,  String siteAdminAddress, String reporter) throws TicketOperationException {
 		log.debug("Invoking ticketing system to schedule a new experiment.");
 		UUID ticketUuid = UUID.randomUUID();
-		String ticketId = ticketUuid.toString();
+
 		String componentName = "EXPERIMENT_SCHEDULE";
 		TicketDescription td = new TicketDescription(experiment.getExperimentId(), timeslot);
 		ObjectMapper mapper = new ObjectMapper();
@@ -74,56 +74,49 @@ public class TicketingSystemRestClient implements TicketingRestInterface{
 		} catch (JsonProcessingException e) {
 			throw new TicketOperationException("Failed to render ticket description:"+e.getMessage());
 		}
-		for(EveSite eveSite: experiment.getTargetSites()){
-			String productName = eveSite.name();
-			if(ticketingAddresses.containsKey(productName) ){
-				String assignedTo = ticketingAddresses.get(productName);
-				NewTrustedTicket ticket = new NewTrustedTicket();
-				ticket.reporter(assignedTo);
-				ticket.setAssignedTo(assignedTo);
-				ticket.setComponent(componentName);
-				ticket.description(description);
-				ticket.product(productName);
-				ticket.summary(experiment.getName()+" SLOT_REQUEST");
 
-				try {
+		String productName = eveSiteName;
+		String assignedTo = siteAdminAddress;
+		NewTrustedTicket ticket = new NewTrustedTicket();
+		ticket.reporter(reporter);
+		ticket.setAssignedTo(assignedTo);
+		ticket.setComponent(componentName);
+		ticket.description(description);
+		ticket.product(productName);
+		ticket.summary(experiment.getName()+" SLOT_REQUEST");
 
-					ApiResponse response = ticketingClient.addTrustedTicketWithHttpInfo(ticket);
+		try {
 
-					String siteTicketId = ((TicketResponse)response.getData()).getDetails().getId();
-					log.debug("Generated ticket with Id: " + ticketId+" site id:"+siteTicketId+" site:"+productName);
-					siteTicketIds.add(new SiteTicketRecord(siteTicketId,assignedTo));
-				} catch (ApiException e) {
-					log.error("Failed API:", e);
-					throw new TicketOperationException("Failed to create ticket via API:"+e.getMessage());
-				}
-			}else throw new TicketOperationException("Failed to retrieve email for site:"+productName);
+			ApiResponse response = ticketingClient.addTrustedTicketWithHttpInfo(ticket);
 
+			String ticketId = ((TicketResponse)response.getData()).getDetails().getId();
+			log.debug("Generated ticket with Id: " + ticketId+" for site:"+productName);
+			return ticketId;
+		} catch (ApiException e) {
+			log.error("Failed API:", e);
+			throw new TicketOperationException("Failed to create ticket via API:"+e.getMessage());
 		}
 
-		log.debug("Generated ticket with ID: " + ticketId);
-		mapTicketToSiteTicket.put(ticketId, siteTicketIds);
-		return ticketId;
 	}
 	
-	public void updateSchedulingTicket(String ticketId, LcTicketUpdateType updateType) throws TicketOperationException {
+	public void updateSchedulingTicket(String ticketId, LcTicketUpdateType updateType, String reporter) throws TicketOperationException {
 		log.debug("Invoking ticketing system to update ticket " + ticketId + " for reason " + updateType.toString());
-		if(mapTicketToSiteTicket.containsKey(ticketId)){
-			for(SiteTicketRecord siteRecord: mapTicketToSiteTicket.get(ticketId)){
-				log.debug("Updating ticket id:"+ticketId+" site ticket id:"+siteRecord.getTicketSiteId()+"with status: "+updateType);
-				NewTrustedComment comment = new NewTrustedComment();
-				comment.comment(updateType.toString());
-				comment.reporter(siteRecord.getReporter());
-				try {
-					commentsApi.ticketsTicketIdCommentsTrustedPostWithHttpInfo(comment, siteRecord.getTicketSiteId() );
-					log.debug("Succesfully updated comment for ticket:"+ticketId+" site_id:"+siteRecord.getTicketSiteId());
-				} catch (ApiException e) {
-					log.error("Error using Comments API!", e);
-					throw new TicketOperationException("Error using Comments API");
-				}
+
+		for(SiteTicketRecord siteRecord: mapTicketToSiteTicket.get(ticketId)){
+			log.debug("Updating ticket id:"+ticketId+" site ticket id:"+siteRecord.getTicketSiteId()+"with status: "+updateType);
+			NewTrustedComment comment = new NewTrustedComment();
+			comment.comment(updateType.toString());
+			comment.reporter(reporter);
+			try {
+				commentsApi.ticketsTicketIdCommentsTrustedPostWithHttpInfo(comment, siteRecord.getTicketSiteId() );
+				log.debug("Successfully updated comment for ticket:"+ticketId+" site_id:"+siteRecord.getTicketSiteId());
+			} catch (ApiException e) {
+				log.error("Error using Comments API!", e);
+				throw new TicketOperationException("Error using Comments API");
 			}
-			log.debug("Succesfuly updated all comment for ticket:"+ticketId);
-		}else throw new TicketOperationException("Unknown ticket id:"+ticketId);
+		}
+		log.debug("Successfully updated all comment for ticket:"+ticketId);
+
 	}
 
 

@@ -105,11 +105,11 @@ public class ExperimentRecordsManager {
 		}
 	}
 	
-	public synchronized void setLcTicketId(String experimentId, String ticketId) {
+	public synchronized void updateExperimentOpenTickets(String experimentId, List<String> openTicketIds) {
 		log.debug("Setting LC ticket ID for experiment " + experimentId);
 		try {
 			Experiment experiment = retrieveExperimentFromId(experimentId);
-			experiment.setLcTicketId(ticketId);
+			experiment.setOpenTicketIds(openTicketIds);
 			experimentRepository.saveAndFlush(experiment);
 		} catch (NotExistingEntityException e) {
 			log.error("Impossible to set LC ticket ID for the experiment " + experimentId + " since it is not found in the db.");

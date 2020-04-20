@@ -43,31 +43,28 @@ public class TicketingSystemService {
 	@Value("${ticketing.url}")
 	private String ticketingUrl;
 
-	@Value("#{${ticketing.addresses}}")
-	private Map<String, String> ticketingAddresses;
 
-
-	private Map<String, ArrayList<String>> mapTicketToSiteTicket = new HashMap<>();
 	public TicketingSystemService() {
 		// TODO Auto-generated constructor stub
 	}
 	
 	public String createSchedulingTicket(Experiment experiment,
 										 ExpDescriptor experimentDescriptor,
-										 ExperimentExecutionTimeslot timeslot) throws TicketOperationException {
-		return restClient.createSchedulingTicket(experiment, experimentDescriptor, timeslot);
+										 ExperimentExecutionTimeslot timeslot,
+										 String eveSiteName,  String siteAdminAddress, String reporter) throws TicketOperationException {
+		return restClient.createSchedulingTicket(experiment, experimentDescriptor, timeslot, eveSiteName, siteAdminAddress, reporter);
 	}
 	
-	public void updateSchedulingTicket(String ticketId, LcTicketUpdateType updateType) throws TicketOperationException {
+	public void updateSchedulingTicket(String ticketId, LcTicketUpdateType updateType, String reporter) throws TicketOperationException {
 
-		restClient.updateSchedulingTicket(ticketId, updateType);
+		restClient.updateSchedulingTicket(ticketId, updateType, reporter);
 	}
 
 	@PostConstruct
 	public void setupTicketingService(){
 		if(ticketingType==TicketingType.BUGZILLA){
 			log.debug("Configuring BUGZILLA TICKETING CLIENT");
-			restClient= new TicketingSystemRestClient(ticketingUrl, ticketingAddresses);
+			restClient= new TicketingSystemRestClient(ticketingUrl);
 		}else if(ticketingType==TicketingType.DUMMY){
 			log.debug("Configuring DUMMY TICKETING CLIENT");
 			restClient= new TicketingDummyDriver();
