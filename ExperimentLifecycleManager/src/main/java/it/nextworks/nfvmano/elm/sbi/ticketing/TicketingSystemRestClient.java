@@ -43,7 +43,7 @@ public class TicketingSystemRestClient implements TicketingRestInterface{
 
 
 
-	private Map<String, ArrayList<SiteTicketRecord>> mapTicketToSiteTicket = new HashMap<>();
+
 
 	public TicketingSystemRestClient(String ticketingUrl){
 		this.ticketingUrl=ticketingUrl;
@@ -68,7 +68,7 @@ public class TicketingSystemRestClient implements TicketingRestInterface{
 		TicketDescription td = new TicketDescription(experiment.getExperimentId(), timeslot);
 		ObjectMapper mapper = new ObjectMapper();
 		String description  = "";
-		ArrayList<SiteTicketRecord> siteTicketIds = new ArrayList<>();
+
 		try {
 			description = mapper.writeValueAsString(td);
 		} catch (JsonProcessingException e) {
@@ -102,19 +102,19 @@ public class TicketingSystemRestClient implements TicketingRestInterface{
 	public void updateSchedulingTicket(String ticketId, LcTicketUpdateType updateType, String reporter) throws TicketOperationException {
 		log.debug("Invoking ticketing system to update ticket " + ticketId + " for reason " + updateType.toString());
 
-		for(SiteTicketRecord siteRecord: mapTicketToSiteTicket.get(ticketId)){
-			log.debug("Updating ticket id:"+ticketId+" site ticket id:"+siteRecord.getTicketSiteId()+"with status: "+updateType);
-			NewTrustedComment comment = new NewTrustedComment();
-			comment.comment(updateType.toString());
-			comment.reporter(reporter);
-			try {
-				commentsApi.ticketsTicketIdCommentsTrustedPostWithHttpInfo(comment, siteRecord.getTicketSiteId() );
-				log.debug("Successfully updated comment for ticket:"+ticketId+" site_id:"+siteRecord.getTicketSiteId());
-			} catch (ApiException e) {
-				log.error("Error using Comments API!", e);
-				throw new TicketOperationException("Error using Comments API");
-			}
+
+		log.debug("Updating ticket id:"+ticketId+"with status: "+updateType);
+		NewTrustedComment comment = new NewTrustedComment();
+		comment.comment(updateType.toString());
+		comment.reporter(reporter);
+		try {
+			commentsApi.ticketsTicketIdCommentsTrustedPostWithHttpInfo(comment, ticketId );
+
+		} catch (ApiException e) {
+			log.error("Error using Comments API!", e);
+			throw new TicketOperationException("Error using Comments API");
 		}
+
 		log.debug("Successfully updated all comment for ticket:"+ticketId);
 
 	}
