@@ -69,6 +69,7 @@ public interface ExperimentLifecycleManagerProviderInterface {
 	 * 
 	 * @param request request with the new status
 	 * @param tenantId ID of the tenant requesting the service modification
+	 * @param tenantEmail Email of the tenant requesting the service modification
 	 * @throws NotExistingEntityException if the experiment does not exist
 	 * @throws MalformattedElementException if the request is malformed
 	 * @throws FailedOperationException if the operation fails
@@ -76,7 +77,7 @@ public interface ExperimentLifecycleManagerProviderInterface {
 	 * @throws NotPermittedOperationException if the change between the two requested states cannot be performed according to the experiment state machine
 	 * @throws MethodNotImplementedException if the method is not implemented
 	 */
-	public void updateExperimentStatus(UpdateExperimentStatusRequest request, String tenantId)
+	public void updateExperimentStatus(UpdateExperimentStatusRequest request, String tenantId, String tenantEmail)
 			throws NotExistingEntityException, MalformattedElementException, FailedOperationException, WrongStatusException, NotPermittedOperationException, MethodNotImplementedException;
 	
 	/**

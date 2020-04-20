@@ -217,7 +217,7 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 	}
 
 	@Override
-	public void updateExperimentStatus(UpdateExperimentStatusRequest request, String tenantId)
+	public void updateExperimentStatus(UpdateExperimentStatusRequest request, String tenantId, String tenantEmail)
 			throws NotExistingEntityException, MalformattedElementException, FailedOperationException, WrongStatusException, NotPermittedOperationException, MethodNotImplementedException {
 		request.isValid();
 		String experimentId = request.getExperimentId();
@@ -242,7 +242,7 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 		}
 		//TODO: check the permission based on the tenant role. This action should be permitted only to the site manager of the facility where the experiment will run
 		String topic = "lifecycle.changestate." + experimentId;
-		UpdateExperimentStateInternalMessage internalMessage = new UpdateExperimentStateInternalMessage(request, tenantId);
+		UpdateExperimentStateInternalMessage internalMessage = new UpdateExperimentStateInternalMessage(request, tenantEmail);
 		try {
 			sendMessageToQueue(internalMessage, topic);
 		} catch (JsonProcessingException e) {

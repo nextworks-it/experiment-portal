@@ -171,9 +171,9 @@ public class ElmRestController {
 			return new ResponseEntity<>("Unauthorized", HttpStatus.UNAUTHORIZED);
 		}
 		String user = getUserFromAuth(auth);
-		
+		String email = getMailFromAuth(auth);
 		try {
-			engine.updateExperimentStatus(request, user);
+			engine.updateExperimentStatus(request, user, email);
 			return new ResponseEntity<>(HttpStatus.ACCEPTED);
 		} catch (NotExistingEntityException e) {
 			log.error("Experiment not found: " + e.getMessage());
