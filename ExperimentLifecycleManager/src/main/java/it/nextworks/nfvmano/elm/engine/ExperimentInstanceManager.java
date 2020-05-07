@@ -477,6 +477,7 @@ public class ExperimentInstanceManager {
     				executionName,
     				msg.getRequest().getTestCaseDescriptorConfiguration(), 
     				eemSubscriptionId);
+    		Experiment experiment = experimentRecordManager.retrieveExperimentFromId(experimentId);
     		eemService.runExperimentExecution(new RunExecutionRequest(
     												currentExecutionId,
 													experimentDescriptor.getExpDescriptorId(),
@@ -484,7 +485,8 @@ public class ExperimentInstanceManager {
 													nsInstanceId,
 													tenantId,
 													siteNames,
-													experimentId
+													experimentId,
+													experiment.getUseCase()
 					));
     		log.debug("Requested execution run to EEM");
     	} catch (Exception e) {
@@ -573,7 +575,11 @@ public class ExperimentInstanceManager {
     		try {
     			subscribeForMonitoring();
     		} catch (FailedOperationException e) {
-				log.debug("Failed to subscribe for automated experiment monitoring. Skipping.");
+
+    			manageExpError("Failed to subscribe for automated experiment monitoring. Setting status to failed");
+				manageExpError(e.getMessage());
+				status = ExperimentStatus.FAILED;
+				experimentRecordManager.setExperimentStatus(experimentId, ExperimentStatus.FAILED);
 			}
     	} else {
     		manageExpError("Failed instantiation of NFV NS for experiment " + experimentId);
@@ -611,21 +617,33 @@ public class ExperimentInstanceManager {
     	log.debug("Retrieving metrics for monitoring subscription");
     	List<InfrastructureMetric> expbMetrics = experimentBlueprint.getMetrics();
     	List<ApplicationMetric> applicationMetrics = vsBlueprint.getApplicationMetrics();
-    	for (CtxBlueprint cb : ctxBlueprints) {
+		Experiment experiment = null;
+    	try {
+    		experiment=experimentRecordManager.retrieveExperimentFromId(experimentId);
+		} catch (NotExistingEntityException e) {
+			log.error("Error retrieving experiment: "+experimentId, e);
+			throw  new FailedOperationException(e.getMessage());
+		}
+    	String useCase = experiment.getUseCase();
+		for (CtxBlueprint cb : ctxBlueprints) {
     		applicationMetrics.addAll(cb.getApplicationMetrics());
     	}
     	//at the moment we manage a single site
     	EveSite site = targetSites.get(0);
     	for (InfrastructureMetric im : expbMetrics) {
     		log.debug("Infrastructure metric: " + " ID: " + im.getMetricId() + " Name: " + im.getName());
-    		infrastructureMonitoringMetrics.add(new MonitoringDataItem(experimentId, MonitoringDataType.INFRASTRUCTURE_METRIC, site, im.getMetricId()));
+    		MonitoringDataItem dataItem = new MonitoringDataItem(experimentId, MonitoringDataType.INFRASTRUCTURE_METRIC, site, im.getMetricId(),
+                    im.getName(), im.getMetricGraphType(), im.getMetricCollectionType(), im.getUnit(), im.getInterval(), useCase);
+    		infrastructureMonitoringMetrics.add(dataItem);
             log.debug("adding application metric: "+im.getMetricId());
 
     	}
     	for (ApplicationMetric am : applicationMetrics) {
-    		log.debug("Infrastructure metric: " + " ID: " + am.getMetricId() + " Name: " + am.getName());
-    		applicationMonitoringMetrics.add(new MonitoringDataItem(experimentId, MonitoringDataType.APPLICATION_METRIC, site, am.getMetricId()));
-            log.debug("adding infrastructure metric: "+am.getMetricId());
+    		log.debug("Application metric: " + " ID: " + am.getMetricId() + " Name: " + am.getName());
+            MonitoringDataItem dataItem = new MonitoringDataItem(experimentId, MonitoringDataType.APPLICATION_METRIC, site, am.getMetricId(),
+                    am.getName(), am.getMetricGraphType(), am.getMetricCollectionType(), am.getUnit(), am.getInterval(), useCase);
+    		applicationMonitoringMetrics.add(dataItem);
+            log.debug("adding application metric: "+am.getMetricId());
     	}
     	dcmDriver.subscribe(infrastructureMonitoringMetrics, MonitoringDataType.INFRASTRUCTURE_METRIC);
     	dcmDriver.subscribe(applicationMonitoringMetrics, MonitoringDataType.APPLICATION_METRIC);
@@ -634,7 +652,9 @@ public class ExperimentInstanceManager {
     	log.debug("Retrieving KPIs for monitoring subscription");
     	List<KeyPerformanceIndicator> kpis = experimentBlueprint.getKpis();
     	for (KeyPerformanceIndicator kpi : kpis) {
-    		monitoringKpis.add(new MonitoringDataItem(experimentId, MonitoringDataType.KPI, site, kpi.getKpiId()));
+    	    MonitoringDataItem dataItem = new MonitoringDataItem(experimentId, MonitoringDataType.KPI, site, kpi.getKpiId(),
+                    kpi.getName(), kpi.getKpiGraphType(), null , kpi.getUnit(), kpi.getInterval(), useCase );
+    		monitoringKpis.add(dataItem);
     	}
     	dcmDriver.subscribe(monitoringKpis, MonitoringDataType.KPI);
     	log.debug("Subscribed for monitoring KPIs");

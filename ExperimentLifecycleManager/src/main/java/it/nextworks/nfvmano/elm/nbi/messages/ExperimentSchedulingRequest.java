@@ -38,6 +38,10 @@ public class ExperimentSchedulingRequest implements InterfaceMessage {
 
 	@JsonProperty("targetSites")
 	private List<EveSite> targetSites = new ArrayList<EveSite>();
+
+
+	@JsonProperty("useCase")
+	private String useCase;
 	
 	public ExperimentSchedulingRequest() {	}
 
@@ -45,11 +49,13 @@ public class ExperimentSchedulingRequest implements InterfaceMessage {
 	public ExperimentSchedulingRequest(@JsonProperty("experimentName") String experimentName,
 									   @JsonProperty("experimentDescriptorId") String experimentDescriptorId,
 									   @JsonProperty("proposedTimeSlot") ExperimentExecutionTimeslot proposedTimeSlot,
-									   @JsonProperty("targetSites")List<EveSite> targetSites) {
+									   @JsonProperty("targetSites")List<EveSite> targetSites,
+									   @JsonProperty("useCase")String useCase) {
 		this.experimentName = experimentName;
 		this.experimentDescriptorId = experimentDescriptorId;
 		this.proposedTimeSlot = proposedTimeSlot;
 		if (targetSites != null) this.targetSites = targetSites;
+		this.useCase=useCase;
 	}
 	
 	
@@ -82,6 +88,14 @@ public class ExperimentSchedulingRequest implements InterfaceMessage {
 		return proposedTimeSlot;
 	}
 
+
+	/**
+	 * @return the useCase
+	 */
+	public String getUseCase(){
+		return  useCase;
+	}
+
 	@Override
 	public void isValid() throws MalformattedElementException {
 		if (experimentDescriptorId == null) 
@@ -91,6 +105,8 @@ public class ExperimentSchedulingRequest implements InterfaceMessage {
 		else proposedTimeSlot.isValid();
 		if (targetSites.isEmpty()) 
 			throw new MalformattedElementException("Experiment scheduling request without target site");
+		if(useCase==null || useCase.isEmpty())
+			throw new MalformattedElementException("Experiment scheduling request without assigned use case");
 	}
 	
 }

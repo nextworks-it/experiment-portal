@@ -59,9 +59,9 @@ public class ExperimentRecordsManager {
 	
 	public ExperimentRecordsManager() {	}
 	
-	public synchronized String createExperiment(String experimentDescriptorId, String experimentName, String tenantId, ExperimentExecutionTimeslot timeslot, List<EveSite> targetSites) {
+	public synchronized String createExperiment(String experimentDescriptorId, String experimentName, String tenantId, ExperimentExecutionTimeslot timeslot, List<EveSite> targetSites, String useCase) {
 		log.debug("Storing a new experiment instance in DB.");
-		Experiment experiment = new Experiment(experimentDescriptorId, experimentName, tenantId, timeslot, targetSites);
+		Experiment experiment = new Experiment(experimentDescriptorId, experimentName, tenantId, timeslot, targetSites, useCase);
 		experimentRepository.saveAndFlush(experiment);
 		Long id = experiment.getId();
 		String experimentId = id.toString();

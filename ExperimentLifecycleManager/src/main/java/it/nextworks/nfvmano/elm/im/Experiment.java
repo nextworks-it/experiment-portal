@@ -112,6 +112,7 @@ public class Experiment {
     private List<ExperimentExecution> executions = new ArrayList<>();
 
 
+    private String useCase;
 
 	public Experiment() {
 		// JPA only
@@ -121,13 +122,15 @@ public class Experiment {
     		String name,
     		String tenantId,
     		ExperimentExecutionTimeslot timeslot,
-    		List<EveSite> targetSites) {
+    		List<EveSite> targetSites,
+					  String useCase) {
     	this.tenantId = tenantId;
     	this.experimentDescriptorId = experimentDescriptorId;
     	this.name = name;
     	this.status = ExperimentStatus.SCHEDULING;
     	this.timeslot = timeslot;
     	if (targetSites != null) this.targetSites = targetSites;
+    	this.useCase = useCase;
 	}
 
 
@@ -351,6 +354,13 @@ public class Experiment {
 		return experimentId;
 	}
 
+
+	/**
+	 * @return the useCase
+	 */
+	public String getUseCase() {
+		return useCase;
+	}
 
 
 	/**

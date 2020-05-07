@@ -18,6 +18,8 @@ package it.nextworks.nfvmano.elm.sbi.monitoring;
 import javax.persistence.Embeddable;
 
 import it.nextworks.nfvmano.catalogue.blueprint.elements.EveSite;
+import it.nextworks.nfvmano.catalogue.blueprint.elements.MetricCollectionType;
+import it.nextworks.nfvmano.catalogue.blueprint.elements.MetricGraphType;
 
 @Embeddable
 public class MonitoringDataItem {
@@ -25,18 +27,41 @@ public class MonitoringDataItem {
 	private String expId;
 	private MonitoringDataType mdt;
 	private EveSite site;
+
+	//This is filled the metricId or the kpi id
 	private String mdName;
-	
+	private String useCase;
+
+	//added to support DCM context
+	private String metricName;
+	private MetricGraphType metricGraphType;
+	private MetricCollectionType metricCollectionType;
+	private String metricUnit;
+	private String metricInterval;
+
 	public MonitoringDataItem() { }
 	
 	public MonitoringDataItem(String expId,
 			MonitoringDataType mdt,
 			EveSite site,
-			String mdName) { 
+			String mdName,
+		    	String metricName,
+			MetricGraphType metricGraphType,
+			MetricCollectionType metricCollectionType,
+		   	String metricUnit,
+			String metricInterval,
+			String useCase
+		  ) {
 		this.expId = expId;
 		this.mdName = mdName;
 		this.site = site;
 		this.mdt = mdt;
+		this.metricName = metricName;
+		this.metricGraphType = metricGraphType;
+		this.metricCollectionType = metricCollectionType;
+		this.metricUnit = metricUnit;
+		this.metricInterval= metricInterval;
+		this.useCase = useCase;
 	}
 
 	/**
@@ -68,11 +93,32 @@ public class MonitoringDataItem {
 	}
 	
 	public String getDataItemString() {
-		String s = expId + "." 
+		String s = useCase+"."
+				+ expId + "."
 				+ site.toString().toLowerCase() + "." 
 				+ mdt.toString().toLowerCase() + "." 
 				+ mdName;
 		return s;
 	}
 
+
+	public String getMetricName() {
+		return metricName;
+	}
+
+	public MetricGraphType getMetricGraphType() {
+		return metricGraphType;
+	}
+
+	public MetricCollectionType getMetricCollectionType() {
+		return metricCollectionType;
+	}
+
+	public String getMetricUnit() {
+		return metricUnit;
+	}
+
+	public String getMetricInterval() {
+		return metricInterval;
+	}
 }

@@ -15,16 +15,22 @@
  */
 package it.nextworks.nfvmano.elm.sbi.monitoring.rest;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 public class MonitoringRecordValueEntry {
 
 	private String topic;
 	private String expId;
 	private String action;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+	private MonitoringRecordValueContext context;
 	
-	public MonitoringRecordValueEntry(String topic, String expId, String action) {
+	public MonitoringRecordValueEntry(String topic, String expId, String action, MonitoringRecordValueContext context) {
 		this.topic = topic;
 		this.expId = expId;
 		this.action = action;
+		this.context = context;
 	}
 
 	public String getTopic() {
@@ -38,5 +44,8 @@ public class MonitoringRecordValueEntry {
 	public String getAction() {
 		return action;
 	}
-	
+
+    public MonitoringRecordValueContext getContext() {
+        return context;
+    }
 }

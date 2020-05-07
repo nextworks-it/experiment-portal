@@ -18,7 +18,9 @@ package it.nextworks.nfvmano.elm.sbi.monitoring;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.nextworks.nfvmano.elm.sbi.monitoring.rest.MonitoringRecordValueContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -74,11 +76,6 @@ public class DataCollectionManagerDriver implements DataCollectionManagerInterfa
 	public void subscribe(List<MonitoringDataItem> item, MonitoringDataType mdt) throws FailedOperationException {
 		log.debug("Subscribing for monitoring of " + mdt.toString().toLowerCase());
 
-		if (monitoringType.equalsIgnoreCase("DUMMY")) {
-			log.debug("DCM configured in dummy mode. Message not really sent");
-			return;
-		}
-		
 		HttpHeaders header = new HttpHeaders();
 		header.add("Content-Type", "application/json");
 		
@@ -87,11 +84,29 @@ public class DataCollectionManagerDriver implements DataCollectionManagerInterfa
 		List<MonitoringRecordItem> records = new ArrayList<MonitoringRecordItem>();
 		for (MonitoringDataItem mdi : item) {
 		    log.debug("Monitoring item:" + mdi.getDataItemString());
-			MonitoringRecordItem mri = new MonitoringRecordItem(new MonitoringRecordValueEntry(mdi.getDataItemString(), mdi.getExpId(), "subscribe"));
+			MonitoringRecordValueContext context=null;
+			if(mdt==MonitoringDataType.APPLICATION_METRIC || mdt==MonitoringDataType.INFRASTRUCTURE_METRIC){
+				context = new MonitoringRecordValueContext(mdi.getMdName(), null, mdi.getMetricCollectionType(),
+						mdi.getMetricGraphType(), mdi.getMetricName(), mdi.getMetricUnit(), mdi.getMetricInterval());
+			}else if(mdt==MonitoringDataType.KPI){
+				context = new MonitoringRecordValueContext(null, mdi.getMdName(), mdi.getMetricCollectionType(),
+						mdi.getMetricGraphType(), mdi.getMetricName(), mdi.getMetricUnit(), mdi.getMetricInterval());
+			}
+			MonitoringRecordItem mri = new MonitoringRecordItem(new MonitoringRecordValueEntry(mdi.getDataItemString(), mdi.getExpId(), "subscribe", context));
 			records.add(mri);
 		}
 		MonitoringRecordMessage message = new MonitoringRecordMessage(records);
-		
+
+		if (monitoringType.equalsIgnoreCase("DUMMY")) {
+			log.debug("DCM configured in dummy mode. Message not really sent");
+			ObjectMapper objectMapper = new ObjectMapper();
+				try {
+				log.debug(objectMapper.writeValueAsString(message));
+			} catch (JsonProcessingException e) {
+				log.error("Error processing JSON:", e);
+			}
+			return;
+		}
 		HttpEntity<?> postEntity = new HttpEntity<>(message, header);
 		
 		try {
@@ -110,10 +125,7 @@ public class DataCollectionManagerDriver implements DataCollectionManagerInterfa
 	public void unsubscribe(List<MonitoringDataItem> item, MonitoringDataType mdt) throws FailedOperationException {
 		log.debug("Unsubscribing for monitoring of " + mdt.toString().toLowerCase());
 
-		if (monitoringType.equalsIgnoreCase("DUMMY")) {
-			log.debug("DCM configured in dummy mode. Message not really sent");
-			return;
-		}
+
 		
 		HttpHeaders header = new HttpHeaders();
 		header.add("Content-Type", "application/json");
@@ -122,11 +134,24 @@ public class DataCollectionManagerDriver implements DataCollectionManagerInterfa
 		
 		List<MonitoringRecordItem> records = new ArrayList<MonitoringRecordItem>();
 		for (MonitoringDataItem mdi : item) {
-			MonitoringRecordItem mri = new MonitoringRecordItem(new MonitoringRecordValueEntry(mdi.getDataItemString(), mdi.getExpId(), "unsubscribe"));
+
+			MonitoringRecordItem mri = new MonitoringRecordItem(new MonitoringRecordValueEntry(mdi.getDataItemString(), mdi.getExpId(), "unsubscribe", null));
 			records.add(mri);
 		}
 		MonitoringRecordMessage message = new MonitoringRecordMessage(records);
-        ObjectMapper objMapper = new ObjectMapper();
+
+
+		if (monitoringType.equalsIgnoreCase("DUMMY")) {
+			log.debug("DCM configured in dummy mode. Message not really sent");
+			ObjectMapper objectMapper = new ObjectMapper();
+			try {
+				log.debug(objectMapper.writeValueAsString(message));
+			} catch (JsonProcessingException e) {
+				log.error("Error processing JSON:", e);
+			}
+			return;
+
+		}
 		HttpEntity<?> postEntity = new HttpEntity<>(message, header);
 		
 		try {

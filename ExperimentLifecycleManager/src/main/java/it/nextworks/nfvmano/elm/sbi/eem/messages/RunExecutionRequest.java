@@ -33,6 +33,7 @@ public class RunExecutionRequest implements InterfaceMessage {
 	private String tenantId;
 	private List<String> siteNames = new ArrayList<>();
 	private String experimentId;
+	private String useCase;
 	
 	public RunExecutionRequest() {	}
 	
@@ -42,7 +43,8 @@ public class RunExecutionRequest implements InterfaceMessage {
 			String nsInstanceId,
             String tenantId,
 			List<String> siteNames,
-			String experimentId) {
+			String experimentId,
+							   String useCase) {
 		this.executionId = executionId;
 		this.experimentDescriptorId = experimentDescriptorId;
 		if (testCaseDescriptorConfiguration != null) this.testCaseDescriptorConfiguration = testCaseDescriptorConfiguration;
@@ -54,6 +56,7 @@ public class RunExecutionRequest implements InterfaceMessage {
 				this.siteNames.add(siteName);
 			}
 		}
+		this.useCase=useCase;
 	}
 
 	
@@ -102,6 +105,8 @@ public class RunExecutionRequest implements InterfaceMessage {
 		}
 	}
 
+	public String getUseCase(){ return useCase;	}
+
 
 	@Override
 	public void isValid() throws MalformattedElementException {
@@ -110,6 +115,7 @@ public class RunExecutionRequest implements InterfaceMessage {
 		if (nsInstanceId == null) throw new MalformattedElementException("Run execution request without NS instance ID");
 		if (tenantId == null) throw new MalformattedElementException("Run execution request without tenant ID");
 		if (experimentId == null) throw new MalformattedElementException("Run execution request without experiment ID");
+		if (useCase == null) throw new MalformattedElementException("Run execution request without use case");
 	}
 
 }
