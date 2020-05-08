@@ -135,7 +135,15 @@ public class DataCollectionManagerDriver implements DataCollectionManagerInterfa
 		List<MonitoringRecordItem> records = new ArrayList<MonitoringRecordItem>();
 		for (MonitoringDataItem mdi : item) {
 
-			MonitoringRecordItem mri = new MonitoringRecordItem(new MonitoringRecordValueEntry(mdi.getDataItemString(), mdi.getExpId(), "unsubscribe", null));
+			MonitoringRecordValueContext context=null;
+			if(mdt==MonitoringDataType.APPLICATION_METRIC || mdt==MonitoringDataType.INFRASTRUCTURE_METRIC){
+				context = new MonitoringRecordValueContext(mdi.getMdName(), null, mdi.getMetricCollectionType(),
+						mdi.getMetricGraphType(), mdi.getMetricName(), mdi.getMetricUnit(), mdi.getMetricInterval());
+			}else if(mdt==MonitoringDataType.KPI){
+				context = new MonitoringRecordValueContext(null, mdi.getMdName(), mdi.getMetricCollectionType(),
+						mdi.getMetricGraphType(), mdi.getMetricName(), mdi.getMetricUnit(), mdi.getMetricInterval());
+			}
+			MonitoringRecordItem mri = new MonitoringRecordItem(new MonitoringRecordValueEntry(mdi.getDataItemString(), mdi.getExpId(), "unsubscribe", context));
 			records.add(mri);
 		}
 		MonitoringRecordMessage message = new MonitoringRecordMessage(records);
