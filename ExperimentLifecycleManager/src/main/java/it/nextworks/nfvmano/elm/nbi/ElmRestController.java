@@ -1,10 +1,11 @@
 package it.nextworks.nfvmano.elm.nbi;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
+import it.nextworks.nfvmano.catalogue.blueprint.elements.EveSite;
+import it.nextworks.nfvmano.elm.sbi.rbac.RbacService;
 import org.keycloak.KeycloakPrincipal;
 import org.keycloak.KeycloakSecurityContext;
 import org.slf4j.Logger;
@@ -47,6 +48,9 @@ public class ElmRestController {
 	
 	@Autowired
 	private ExperimentLifecycleManagerEngine engine;
+
+	@Autowired
+	private RbacService rbacService;
 	
 	@Value("${authentication.enable}")
 	private boolean authenticationEnable;
@@ -136,16 +140,27 @@ public class ElmRestController {
 	}
 	
 	@RequestMapping(value = "/experiment", method = RequestMethod.GET)
-	public ResponseEntity<?> getAllExperimenters(@RequestParam(required = false) String expId, @RequestParam(required = false) String expDId, Authentication auth) {
+	public ResponseEntity<?> getAllExperiments(@RequestParam(required = false) String expId, @RequestParam(required = false) String expDId, Authentication auth) {
 		log.debug("Received request to retrieve info about experiments.");
 		if(!validateAuthentication(auth)){
 			log.warn("Unable to retrieve request authentication information");
 			return new ResponseEntity<>("Unauthorized", HttpStatus.UNAUTHORIZED);
 		}
 		String user = getUserFromAuth(auth);
+		Set<String> userRoles = getUserRoles(auth);
+		boolean isSiteAdmin = userRoles.contains("SiteManager");
+
 		
 		try {
-			Filter filter = buildFilter(expId, expDId, user);
+			Filter filter;
+			if(isSiteAdmin){
+				List<EveSite> userManagedSites = rbacService.getUserManagedSites();
+				filter = buildAdminFilter(userManagedSites);
+
+			}else{
+				filter = buildFilter(expId, expDId, user);
+
+			}
 			GeneralizedQueryRequest request = new GeneralizedQueryRequest(filter, null);
 			List<Experiment> experiments = engine.getExperiments(request);
 			return new ResponseEntity<List<Experiment>>(experiments, HttpStatus.OK);
@@ -157,7 +172,17 @@ public class ElmRestController {
 			return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
-	
+
+	private Filter buildAdminFilter(List<EveSite> userManagedSites) {
+		Map<String, String> parameters = new HashMap<String, String>();
+		String eveSitesStr = userManagedSites.stream()
+				.map(site -> site.toString())
+				.collect(Collectors.joining(","));
+		parameters.put("SITE_ADMIN", eveSitesStr);
+		return  new Filter(parameters);
+
+	}
+
 	@RequestMapping(value = "/experiment/{expId}/status", method = RequestMethod.PUT)
 	public ResponseEntity<?> updateExperimentStatus(@RequestBody UpdateExperimentStatusRequest request, @PathVariable String expId, Authentication auth) {
 		log.debug("Received request to update the status of experiment " + expId);
@@ -298,7 +323,24 @@ public class ElmRestController {
 			return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
-	
+
+	private Set<String> getUserRoles(Authentication auth){
+		if(authenticationEnable){
+			if(keycloakEnabled){
+				if (auth.getPrincipal() instanceof KeycloakPrincipal) {
+					KeycloakPrincipal<KeycloakSecurityContext> kp = (KeycloakPrincipal<KeycloakSecurityContext>) auth.getPrincipal();
+					Set<String> roles = kp.getKeycloakSecurityContext().getToken().getRealmAccess().getRoles();
+					log.debug("Retrieved user roles: "+roles);
+					return roles;
+				}else return Collections.emptySet();
+			}else{
+				return Collections.emptySet() ;
+
+			}
+
+		}else return Collections.emptySet();
+	}
+
 	private Filter buildFilter(String expId, String expDId, String tenantId) {
 		Map<String, String> parameters = new HashMap<String, String>();
 		parameters.put("TENANT_ID", tenantId);

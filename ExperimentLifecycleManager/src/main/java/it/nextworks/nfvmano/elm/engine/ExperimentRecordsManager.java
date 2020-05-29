@@ -273,7 +273,7 @@ public class ExperimentRecordsManager {
 		log.debug("Retrieving all active experiments");
 		List<Experiment> allExperiments = experimentRepository.findAll();
 		List<Experiment> siteExperiments = allExperiments.stream()
-				.filter(currentExperiment -> !currentExperiment.getTargetSites().contains(site))
+				.filter(currentExperiment -> currentExperiment.getTargetSites().contains(site))
 				.collect(Collectors.toList());
 		return siteExperiments;
     }

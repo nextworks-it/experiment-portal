@@ -17,6 +17,7 @@ package it.nextworks.nfvmano.elm.engine;
 
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import it.nextworks.nfvmano.elm.im.ExperimentExecutionStatus;
@@ -183,6 +184,7 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 		//1. TENANT ID
 		//2. TENANT ID and Exp_ID
 		//3. TENANT ID and ExpD_ID
+		//4. SITE_ADMIN (comma separated list of sites)
 		//No attribute selector is supported at the moment
 				
 		Filter filter = request.getFilter();
@@ -207,6 +209,19 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 				List<Experiment> exps = new ArrayList<Experiment>();
 				exps.add(experiment);
 				return exps;
+			} else if(fp.size()==1 && fp.containsKey("SITE_ADMIN")){
+
+				log.debug("Retrieving SITE_ADMIN experiments:"+fp.get("SITE_ADMIN"));
+				List<EveSite> eveSites = Arrays.stream(fp.get("SITE_ADMIN").split(","))
+						.map(eveSiteStr -> EveSite.valueOf(eveSiteStr))
+						.collect(Collectors.toList());
+				List<Experiment> experiments = new ArrayList<>();
+				for(EveSite site: eveSites){
+					log.debug("Retrieving experiments for:"+site);
+					List<Experiment> siteExps = experimentRecordManager.retrieveExperimentFromSite(site);
+					experiments.addAll(siteExps);
+				}
+				return experiments;
 			} else {
 				log.error("Received experiment query with not supported filter.");
 				throw new MalformattedElementException("Received experiment query with not supported filter.");
@@ -344,9 +359,9 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 		ExperimentInstanceManager eim = getExperimentInstanceManager(experimentId);
 		checkExperimenterPermission(eim, tenantId);
 		ExperimentStatus currentStatus = eim.getExperimentStatus();
-		if (! ((currentStatus == ExperimentStatus.TERMINATED) || (currentStatus == ExperimentStatus.FAILED) || (currentStatus == ExperimentStatus.REFUSED))) {
-			log.error("The system cannot remove experiment " + experimentId + " since it is not in TERMINATED or FAILED state.");
-			throw new WrongStatusException("The system cannot terminate experiment " + experimentId + " since it is not in TERMINATED or FAILED state.");
+		if (! (currentStatus==ExperimentStatus.READY)||(currentStatus == ExperimentStatus.TERMINATED) || (currentStatus == ExperimentStatus.FAILED) || (currentStatus == ExperimentStatus.REFUSED))) {
+			log.error("The system cannot remove experiment " + experimentId + " since it is not in READY, TERMINATED or FAILED state.");
+			throw new WrongStatusException("The system cannot terminate experiment " + experimentId + " since it is not in READY,TERMINATED or FAILED state.");
 		}
 		Experiment exp = experimentRecordManager.retrieveExperimentFromId(experimentId);
 		String expdId = exp.getExperimentDescriptorId();

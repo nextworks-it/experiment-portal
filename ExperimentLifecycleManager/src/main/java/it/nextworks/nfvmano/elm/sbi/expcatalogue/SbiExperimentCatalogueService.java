@@ -20,12 +20,11 @@ import java.util.Map;
 
 import javax.annotation.PostConstruct;
 
-import it.nextworks.osm.auth.OAuth;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.stereotype.Service;
 
 import it.nextworks.nfvmano.catalogue.blueprint.elements.ExpBlueprint;
