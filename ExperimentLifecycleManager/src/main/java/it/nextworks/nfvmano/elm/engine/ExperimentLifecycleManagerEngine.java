@@ -359,7 +359,7 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 		ExperimentInstanceManager eim = getExperimentInstanceManager(experimentId);
 		checkExperimenterPermission(eim, tenantId);
 		ExperimentStatus currentStatus = eim.getExperimentStatus();
-		if (! (currentStatus==ExperimentStatus.READY)||(currentStatus == ExperimentStatus.TERMINATED) || (currentStatus == ExperimentStatus.FAILED) || (currentStatus == ExperimentStatus.REFUSED))) {
+		if (! ((currentStatus==ExperimentStatus.READY)||(currentStatus == ExperimentStatus.TERMINATED) || (currentStatus == ExperimentStatus.FAILED) || (currentStatus == ExperimentStatus.REFUSED))) {
 			log.error("The system cannot remove experiment " + experimentId + " since it is not in READY, TERMINATED or FAILED state.");
 			throw new WrongStatusException("The system cannot terminate experiment " + experimentId + " since it is not in READY,TERMINATED or FAILED state.");
 		}
