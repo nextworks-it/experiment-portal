@@ -112,7 +112,7 @@ public class RunExecutionRequest implements InterfaceMessage {
 	public void isValid() throws MalformattedElementException {
 		if (executionId == null) throw new MalformattedElementException("Run execution request without execution ID");
 		if (experimentDescriptorId == null) throw new MalformattedElementException("Run execution request without expD ID");
-		if (nsInstanceId == null) throw new MalformattedElementException("Run execution request without NS instance ID");
+		//if (nsInstanceId == null) throw new MalformattedElementException("Run execution request without NS instance ID");
 		if (tenantId == null) throw new MalformattedElementException("Run execution request without tenant ID");
 		if (experimentId == null) throw new MalformattedElementException("Run execution request without experiment ID");
 		if (useCase == null) throw new MalformattedElementException("Run execution request without use case");

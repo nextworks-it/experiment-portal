@@ -20,6 +20,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import it.nextworks.nfvmano.elm.im.*;
+import it.nextworks.nfvmano.elm.repos.ExperimentSapInfoRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,13 +29,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import it.nextworks.nfvmano.catalogue.blueprint.elements.EveSite;
-import it.nextworks.nfvmano.elm.im.ExecutionResult;
-import it.nextworks.nfvmano.elm.im.Experiment;
-import it.nextworks.nfvmano.elm.im.ExperimentExecution;
-import it.nextworks.nfvmano.elm.im.ExperimentExecutionStatus;
-import it.nextworks.nfvmano.elm.im.ExperimentExecutionTimeslot;
-import it.nextworks.nfvmano.elm.im.ExperimentStatus;
-import it.nextworks.nfvmano.elm.im.TestCaseExecutionConfiguration;
 import it.nextworks.nfvmano.elm.repos.ExperimentExecutionRepository;
 import it.nextworks.nfvmano.elm.repos.ExperimentRepository;
 import it.nextworks.nfvmano.elm.repos.TestCaseExecutionConfigurationRepository;
@@ -47,7 +42,9 @@ public class ExperimentRecordsManager {
 	
 	@Value("${elm.admin}")
 	private String adminTenant;
-	
+
+	@Autowired
+	private ExperimentSapInfoRepository experimentSapInfoRepository;
 	
 	@Autowired
 	private ExperimentRepository experimentRepository;
@@ -159,6 +156,23 @@ public class ExperimentRecordsManager {
 			log.error("Impossible to set NFV NS instance ID for the experiment " + experimentId + " since it is not found in the db.");
 		}
 	}
+
+	public synchronized  void updateExperimentSapInfo(String experimentId, List<ExperimentSapInfo> sapInfos){
+		try {
+			Experiment experiment = retrieveExperimentFromId(experimentId);
+			for(ExperimentSapInfo sapInfo: sapInfos){
+				sapInfo.setExperiment(experiment);
+				experimentSapInfoRepository.saveAndFlush(sapInfo);
+			}
+			experiment.setSapInfo(sapInfos);
+			experimentRepository.saveAndFlush(experiment);
+		} catch (NotExistingEntityException e) {
+			log.error("imposible to update experiment sap info");
+		}
+
+
+	}
+
 	
 	public synchronized void updateExperimentExecutionStatus(String executionId, ExperimentExecutionStatus status, Map<String, ExecutionResult> testCaseResult, String reportUrl) {
 		log.debug("Updating result for experiment execution " + executionId);
@@ -254,4 +268,13 @@ public class ExperimentRecordsManager {
 		return activeExperiments;
 	}
 
+    public List<Experiment> retrieveExperimentFromSite(EveSite site) {
+
+		log.debug("Retrieving all active experiments");
+		List<Experiment> allExperiments = experimentRepository.findAll();
+		List<Experiment> siteExperiments = allExperiments.stream()
+				.filter(currentExperiment -> !currentExperiment.getTargetSites().contains(site))
+				.collect(Collectors.toList());
+		return siteExperiments;
+    }
 }

@@ -112,6 +112,13 @@ public class Experiment {
     private List<ExperimentExecution> executions = new ArrayList<>();
 
 
+	@JsonInclude(JsonInclude.Include.NON_EMPTY)
+	@OneToMany(mappedBy = "experiment", cascade=CascadeType.ALL)
+	@OnDelete(action = OnDeleteAction.CASCADE)
+	@LazyCollection(LazyCollectionOption.FALSE)
+	private List<ExperimentSapInfo> sapInfo = new ArrayList<>();
+
+
     private String useCase;
 
 	public Experiment() {
@@ -214,7 +221,14 @@ public class Experiment {
 		this.currentExecutionId = currentExecutionId;
 	}
 
-	
+	public List<ExperimentSapInfo> getSapInfo() {
+		return sapInfo;
+	}
+
+	public void setSapInfo(List<ExperimentSapInfo> sapInfo) {
+		this.sapInfo = sapInfo;
+	}
+
 	/**
 	 * @return the tenantId
 	 */
