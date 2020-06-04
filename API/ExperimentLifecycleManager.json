@@ -14,13 +14,9 @@
       "url": "https://www.apache.org/licenses/LICENSE-2.0\""
     }
   },
-  "host": "192.168.217.2:8085",
+  "host": "localhost:8083",
   "basePath": "/",
   "tags": [
-    {
-      "name": "basic-error-controller",
-      "description": "Basic Error Controller"
-    },
     {
       "name": "eem-notification-rest-controller",
       "description": "Eem Notification Rest Controller"
@@ -78,232 +74,13 @@
         "deprecated": false
       }
     },
-    "/error": {
-      "get": {
-        "tags": [
-          "basic-error-controller"
-        ],
-        "summary": "errorHtml",
-        "operationId": "errorHtmlUsingGET",
-        "produces": [
-          "text/html"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/ModelAndView"
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden"
-          },
-          "404": {
-            "description": "Not Found"
-          }
-        },
-        "deprecated": false
-      },
-      "head": {
-        "tags": [
-          "basic-error-controller"
-        ],
-        "summary": "errorHtml",
-        "operationId": "errorHtmlUsingHEAD",
-        "consumes": [
-          "application/json"
-        ],
-        "produces": [
-          "text/html"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/ModelAndView"
-            }
-          },
-          "204": {
-            "description": "No Content"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden"
-          }
-        },
-        "deprecated": false
-      },
-      "post": {
-        "tags": [
-          "basic-error-controller"
-        ],
-        "summary": "errorHtml",
-        "operationId": "errorHtmlUsingPOST",
-        "consumes": [
-          "application/json"
-        ],
-        "produces": [
-          "text/html"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/ModelAndView"
-            }
-          },
-          "201": {
-            "description": "Created"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden"
-          },
-          "404": {
-            "description": "Not Found"
-          }
-        },
-        "deprecated": false
-      },
-      "put": {
-        "tags": [
-          "basic-error-controller"
-        ],
-        "summary": "errorHtml",
-        "operationId": "errorHtmlUsingPUT",
-        "consumes": [
-          "application/json"
-        ],
-        "produces": [
-          "text/html"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/ModelAndView"
-            }
-          },
-          "201": {
-            "description": "Created"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden"
-          },
-          "404": {
-            "description": "Not Found"
-          }
-        },
-        "deprecated": false
-      },
-      "delete": {
-        "tags": [
-          "basic-error-controller"
-        ],
-        "summary": "errorHtml",
-        "operationId": "errorHtmlUsingDELETE",
-        "produces": [
-          "text/html"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/ModelAndView"
-            }
-          },
-          "204": {
-            "description": "No Content"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden"
-          }
-        },
-        "deprecated": false
-      },
-      "options": {
-        "tags": [
-          "basic-error-controller"
-        ],
-        "summary": "errorHtml",
-        "operationId": "errorHtmlUsingOPTIONS",
-        "consumes": [
-          "application/json"
-        ],
-        "produces": [
-          "text/html"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/ModelAndView"
-            }
-          },
-          "204": {
-            "description": "No Content"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden"
-          }
-        },
-        "deprecated": false
-      },
-      "patch": {
-        "tags": [
-          "basic-error-controller"
-        ],
-        "summary": "errorHtml",
-        "operationId": "errorHtmlUsingPATCH",
-        "consumes": [
-          "application/json"
-        ],
-        "produces": [
-          "text/html"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/ModelAndView"
-            }
-          },
-          "204": {
-            "description": "No Content"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden"
-          }
-        },
-        "deprecated": false
-      }
-    },
     "/portal/elm/experiment": {
       "get": {
         "tags": [
           "elm-rest-controller"
         ],
-        "summary": "getAllExperimenters",
-        "operationId": "getAllExperimentersUsingGET",
+        "summary": "getAllExperiments",
+        "operationId": "getAllExperimentsUsingGET",
         "produces": [
           "*/*"
         ],
@@ -781,6 +558,9 @@
     "ExecuteExperimentRequest": {
       "type": "object",
       "properties": {
+        "executionName": {
+          "type": "string"
+        },
         "experimentId": {
           "type": "string"
         },
@@ -805,7 +585,10 @@
             "INIT",
             "CONFIGURING",
             "RUNNING",
-            "TERMINATED",
+            "RUNNING_STEP",
+            "PAUSED",
+            "VALIDATING",
+            "COMPLETED",
             "ABORTING",
             "ABORTED",
             "FAILED"
@@ -834,6 +617,9 @@
     "ExperimentSchedulingRequest": {
       "type": "object",
       "properties": {
+        "experimentName": {
+          "type": "string"
+        },
         "experimentDescriptorId": {
           "type": "string"
         },
@@ -853,6 +639,9 @@
               "GREECE_ATHENS"
             ]
           }
+        },
+        "useCase": {
+          "type": "string"
         }
       },
       "title": "ExperimentSchedulingRequest"
