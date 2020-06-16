@@ -86,7 +86,7 @@ public class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
                 .antMatchers(HttpMethod.GET,"/portal/elm/experiment").hasAnyRole("Experimenter", "SiteManager")
                 .antMatchers(HttpMethod.PUT,"/portal/elm/experiment/{^[\\\\d]}/status").hasAnyRole("SiteManager")
                 .antMatchers(HttpMethod.PUT,"/portal/elm/experiment/{^[\\\\d]}/timeslot").hasAnyRole("Experimenter","SiteManager")
-                .antMatchers(HttpMethod.POST,"/portal/elm/experiment/{^[\\\\d]}/action/deploy").hasAnyRole("SiteManager")
+                .antMatchers(HttpMethod.POST,"/portal/elm/experiment/{^[\\\\d]}/action/deploy").hasAnyRole("Experimenter")
                 .antMatchers(HttpMethod.POST,"/portal/elm/experiment/{^[\\\\d]}/action/execute").hasAnyRole("Experimenter")
                 .antMatchers(HttpMethod.POST,"/portal/elm/experiment/{^[\\\\d]}/action/terminate").hasAnyRole("Experimenter")
                 .antMatchers(HttpMethod.POST,"/portal/elm/experiment/{^[\\\\d]}/action/abort").hasAnyRole("Experimenter")

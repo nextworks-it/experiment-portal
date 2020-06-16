@@ -545,15 +545,36 @@ public class ExperimentInstanceManager {
 				break;
 			}
 
-			case COMPLETED:
+			case COMPLETED: {
+				log.debug("The execution is in status " + execStatus.toString());
+				status = ExperimentStatus.INSTANTIATED;
+				experimentRecordManager.setExperimentStatus(experimentId, ExperimentStatus.INSTANTIATED);
+				try {
+					ExperimentExecution execution = eemService.getExperimentExecution(executionId);
+
+					experimentRecordManager.updateExperimentExecutionStatus(executionId,
+							ExperimentExecutionStatus.COMPLETED,
+							execution.getTestCaseResult(),
+							execution.getReportUrl());
+					eemService.unsubscribe(eemSubscriptionId);
+					//TODO: shall we remove from EEM?
+					eemService.removeExperimentExecutionRecord(executionId);
+					eemSubscriptionId = null;
+					currentExecutionId = null;
+				} catch (Exception e) {
+					log.error("Error while interacting with EEM to retrieve execution information.");
+				}
+				break;
+			}
 			case FAILED: {
 				log.debug("The execution is in status " + execStatus.toString());
 				status = ExperimentStatus.INSTANTIATED;
 				experimentRecordManager.setExperimentStatus(experimentId, ExperimentStatus.INSTANTIATED);
 				try {
 					ExperimentExecution execution = eemService.getExperimentExecution(executionId);
+
 					experimentRecordManager.updateExperimentExecutionStatus(executionId,
-							ExperimentExecutionStatus.COMPLETED,
+							ExperimentExecutionStatus.FAILED,
 							execution.getTestCaseResult(),
 							execution.getReportUrl());
 					eemService.unsubscribe(eemSubscriptionId);
@@ -638,7 +659,11 @@ public class ExperimentInstanceManager {
 			QueryNsResponse response = this.nfvoLcmService.queryNs(buildQueryForParameter("NS_ID", this.nsInstanceId));
 			List<ExperimentSapInfo> sapInfos = new ArrayList<>();
 			for(SapInfo sap : response.getQueryNsResult().get(0).getSapInfo()){
-				ExperimentSapInfo eSap = new ExperimentSapInfo(null, sap.getSapdId(), sap.getSapName(), sap.getDescription(), sap.getAddress());
+				String sapdId = sap.getSapdId();
+				//Modified this to also include the vnfdid
+				log.debug("Retrieved SAP "+sapdId+" "+sap.getAddress());
+				sapdId=sap.getDescription();
+				ExperimentSapInfo eSap = new ExperimentSapInfo(null,sapdId, sap.getSapName(), sap.getDescription(), sap.getAddress());
 				sapInfos.add(eSap);
 			}
 			experimentRecordManager.updateExperimentSapInfo(experimentId, sapInfos);
@@ -703,7 +728,10 @@ public class ExperimentInstanceManager {
 		EveSite site = targetSites.get(0);
 		for (InfrastructureMetric im : expbMetrics) {
 			log.debug("Infrastructure metric: " + " ID: " + im.getMetricId() + " Name: " + im.getName());
-			MonitoringDataItem dataItem = new MonitoringDataItem(experimentId, MonitoringDataType.INFRASTRUCTURE_METRIC, site, im.getMetricId(),
+			String imMetricId = im.getMetricId();
+			//TODO:Changed to use the metricType
+			imMetricId = im.getiMetricType().toString();
+			MonitoringDataItem dataItem = new MonitoringDataItem(experimentId, MonitoringDataType.INFRASTRUCTURE_METRIC, site, imMetricId ,
 					im.getName(), im.getMetricGraphType(), im.getMetricCollectionType(), im.getUnit(), im.getInterval(), useCase);
 			infrastructureMonitoringMetrics.add(dataItem);
 			log.debug("adding application metric: "+im.getMetricId());

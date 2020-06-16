@@ -18,6 +18,7 @@ package it.nextworks.nfvmano.elm.engine;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import it.nextworks.nfvmano.elm.im.*;
@@ -60,7 +61,7 @@ public class ExperimentRecordsManager {
 		log.debug("Storing a new experiment instance in DB.");
 		Experiment experiment = new Experiment(experimentDescriptorId, experimentName, tenantId, timeslot, targetSites, useCase);
 		experimentRepository.saveAndFlush(experiment);
-		Long id = experiment.getId();
+		UUID id = experiment.getId();
 		String experimentId = id.toString();
 		experiment.setExperimentId(experimentId);
 		experimentRepository.saveAndFlush(experiment);

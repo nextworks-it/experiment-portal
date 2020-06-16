@@ -18,6 +18,7 @@ package it.nextworks.nfvmano.elm.im;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import javax.persistence.CascadeType;
 import javax.persistence.CollectionTable;
@@ -49,7 +50,7 @@ public class Experiment {
 	@Id
     @GeneratedValue
     @JsonIgnore
-    private Long id;
+    private UUID id;
 
     private String experimentId;
     
@@ -355,7 +356,7 @@ public class Experiment {
 	/**
 	 * @return the id
 	 */
-	public Long getId() {
+	public UUID getId() {
 		return id;
 	}
 
