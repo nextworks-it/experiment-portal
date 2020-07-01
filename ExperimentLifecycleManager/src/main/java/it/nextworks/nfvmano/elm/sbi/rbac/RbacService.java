@@ -4,6 +4,7 @@ import io.swagger.client.rbac.api.ManagedSitesApi;
 import io.swagger.client.rbac.invoker.ApiClient;
 import io.swagger.client.rbac.model.ManagedSites;
 import it.nextworks.nfvmano.catalogue.blueprint.elements.EveSite;
+import it.nextworks.nfvmano.libs.ifa.common.exceptions.MalformattedElementException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,15 +35,22 @@ public class RbacService {
 
     }
 
-    public List<EveSite> getUserManagedSites() {
+    public List<EveSite> getUserManagedSites() throws MalformattedElementException {
         log.debug("Retrieving user sites");
 
         ManagedSites managedSites = managedSitesApi.getManagedSites(new ManagedSites());
         List<EveSite> siteList = new ArrayList<>();
         for(String site: managedSites.getManagedSites()){
-            siteList.add(EveSite.valueOf(site));
+            try{
+                EveSite currentSite = EveSite.valueOf(site);
+                siteList.add(currentSite);
+            }catch (IllegalArgumentException e){
+                log.error("Error retrieving user manager sites for site:"+site, e);
+                throw new MalformattedElementException("Site administrator sites not correctly configured (invalid site: "+site+"), please contact the system administrator");
 
+            }
         }
+        log.debug("Retrieved user sites:"+siteList);
         return siteList;
 
     }
