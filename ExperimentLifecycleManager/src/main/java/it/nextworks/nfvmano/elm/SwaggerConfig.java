@@ -15,6 +15,7 @@
  */
 package it.nextworks.nfvmano.elm;
 
+import com.google.common.base.Predicates;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
@@ -38,7 +39,8 @@ public class SwaggerConfig extends WebMvcConfigurationSupport {
         return new Docket(DocumentationType.SWAGGER_2)
                 .select()
                 .apis(RequestHandlerSelectors.any())
-                .paths(PathSelectors.regex("/.*"))
+                .paths(Predicates.or(
+                        PathSelectors.ant("/portal/elm/**")))
                 .build()
                 .pathMapping("/")
                 .apiInfo(apiInfo());
