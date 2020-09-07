@@ -340,7 +340,7 @@ implements ExpDescriptorCatalogueInterface, ExpBlueprintCatalogueInterface, Tran
 
 	@Override
 	public void releaseExpDescriptor(String expDescriptorId, String experimentId) throws MethodNotImplementedException, MalformattedElementException, NotExistingEntityException, FailedOperationException {
-		experimentCatalogueRestClient.useExpDescriptor(expDescriptorId, experimentId);
+		experimentCatalogueRestClient.releaseExpDescriptor(expDescriptorId, experimentId);
 	}
 
 	@Override
