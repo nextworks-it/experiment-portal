@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import it.nextworks.nfvmano.elm.im.ExperimentExecutionStatus;
+import it.nextworks.nfvmano.elm.sbi.rbac.RbacService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.BindingBuilder;
@@ -105,6 +106,9 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 	
 	@Autowired
 	private ExperimentRecordsManager experimentRecordManager;
+
+	@Autowired
+	private RbacService rbacService;
 	
 	@Autowired
 	private SbiExperimentCatalogueService sbiExperimentCatalogueService;
@@ -152,6 +156,7 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 			log.debug("Experiment Descriptor Not Found");
 			throw new NotExistingEntityException("Experiment Descriptor Not Found");
 		}
+
 		String experimentId = experimentRecordManager.createExperiment(expDescriptorId, request.getExperimentName(), tenantId,
 				request.getProposedTimeSlot(), request.getTargetSites(), request.getUseCase());
 		try {
@@ -167,6 +172,7 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 				this.experimentInstances.remove(experimentId);
 				throw new FailedOperationException("Internal error with queues.");
 			}
+			rbacService.addUseCase(request.getUseCase());
 			return experimentId;
 		}catch(Exception e){
 			log.error("Error assigning experiment:"+experimentId+" to ExpD:"+expDescriptorId, e);

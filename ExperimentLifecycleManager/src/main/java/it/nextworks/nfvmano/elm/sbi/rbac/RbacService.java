@@ -1,8 +1,10 @@
 package it.nextworks.nfvmano.elm.sbi.rbac;
 
 import io.swagger.client.rbac.api.ManagedSitesApi;
+import io.swagger.client.rbac.api.UseCasesApi;
 import io.swagger.client.rbac.invoker.ApiClient;
 import io.swagger.client.rbac.model.ManagedSites;
+import io.swagger.client.rbac.model.UseCases;
 import it.nextworks.nfvmano.catalogue.blueprint.elements.EveSite;
 import it.nextworks.nfvmano.libs.ifa.common.exceptions.MalformattedElementException;
 import org.slf4j.Logger;
@@ -22,6 +24,7 @@ public class RbacService {
     @Autowired
     private RestTemplate restTemplate;
     private ManagedSitesApi managedSitesApi;
+    private UseCasesApi useCasesApi;
 
     @Value("${rbac.url}")
     private String rbacUrl;
@@ -32,6 +35,7 @@ public class RbacService {
         ApiClient apiClient = new ApiClient(restTemplate);
         apiClient.setBasePath(rbacUrl);
         this.managedSitesApi = new ManagedSitesApi(apiClient);
+        this.useCasesApi = new UseCasesApi(apiClient);
 
     }
 
@@ -52,6 +56,17 @@ public class RbacService {
         }
         log.debug("Retrieved user sites:"+siteList);
         return siteList;
+
+    }
+
+
+
+    public void addUseCase(String useCase){
+        log.debug("Updating user use cases");
+        UseCases useCases = new UseCases();
+        useCases.addUseCasesItem(useCase);
+        useCasesApi.addUseCases(useCases);
+        log.debug("Finished updating use cases");
 
     }
 
