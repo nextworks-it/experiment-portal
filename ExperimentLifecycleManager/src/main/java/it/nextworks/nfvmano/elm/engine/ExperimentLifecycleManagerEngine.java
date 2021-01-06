@@ -158,11 +158,15 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 		}
 
 		String experimentId = experimentRecordManager.createExperiment(expDescriptorId, request.getExperimentName(), tenantId,
-				request.getProposedTimeSlot(), request.getTargetSites(), request.getUseCase());
+				request.getProposedTimeSlot(), request.getTargetSites(), request.getUseCase()
+			//	, request.getPerServiceSites()
+			);
 		try {
 
 			sbiExperimentCatalogueService.useExpDescriptor(request.getExperimentDescriptorId(), experimentId);
-			initNewExperimentInstanceManager(experimentId, expD.getExpDescriptors().get(0), tenantId, request.getTargetSites());
+			initNewExperimentInstanceManager(experimentId, expD.getExpDescriptors().get(0), tenantId, request.getTargetSites()
+					//, request.getPerServiceSites()
+					);
 			String topic = "lifecycle.schedule." + experimentId;
 			ScheduleExperimentInternalMessage internalMessage = new ScheduleExperimentInternalMessage(experimentId, request, tenantEmail);
 			try {
@@ -225,7 +229,17 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 				for(EveSite site: eveSites){
 					log.debug("Retrieving experiments for:"+site);
 					List<Experiment> siteExps = experimentRecordManager.retrieveExperimentFromSite(site);
-					experiments.addAll(siteExps);
+					for(Experiment siteExp : siteExps){
+					   //Avoid showing experiment twice
+                       Optional<Experiment> auxExp = experiments.stream()
+                                            .filter(e -> e.getExperimentId().equals(siteExp.getExperimentId()))
+                                            .findAny();
+                       if(!auxExp.isPresent()){
+                           log.debug("Adding experiment: "+siteExp.getExperimentId()+" to the query result");
+                           experiments.add(siteExp);
+                       }
+                    }
+					//experiments.addAll(siteExps);
 				}
 				return experiments;
 			} else {
@@ -468,7 +482,9 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 				dcmDriver,
 				eemService,
                 true,
-                ticketingAddresses);
+                ticketingAddresses
+				//perServiceSites
+		);
 		createQueue(experimentId, eim);
 		experimentInstances.put(experimentId, eim);
 		log.debug("Experiment instance manager for ID " + experimentId + " initialized.");
@@ -535,6 +551,8 @@ implements ExperimentLifecycleManagerProviderInterface, NfvoLcmNotificationConsu
 				eemService,
                 false,
                 ticketingAddresses
+				//perServiceSites
+
 		);
 		createQueue(experimentId, eim);
 		experimentInstances.put(experimentId, eim);
