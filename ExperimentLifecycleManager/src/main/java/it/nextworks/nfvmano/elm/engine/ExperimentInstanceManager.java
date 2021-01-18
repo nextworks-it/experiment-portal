@@ -640,7 +640,8 @@ public class ExperimentInstanceManager {
 					experiment.getUseCase(),
 					computeMetricTopics(infrastructureMonitoringMetrics),
 					computeMetricTopics(applicationMonitoringMetrics),
-					computeMetricTopics(monitoringKpis)
+					computeMetricTopics(monitoringKpis),
+                    msg.getRequest().getPerfDiag()
 			));
 			log.debug("Requested execution run to EEM");
 		} catch (Exception e) {

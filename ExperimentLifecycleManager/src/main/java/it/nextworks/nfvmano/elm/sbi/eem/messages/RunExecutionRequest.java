@@ -38,6 +38,8 @@ public class RunExecutionRequest implements InterfaceMessage {
 	private Map<String, String> infrastructureMetrics = new HashMap<>();
 	private Map<String, String> applicationMetrics = new HashMap<>();
 	private Map<String, String> kpiMetrics = new HashMap<>();
+	private boolean perfDiag = false;
+
 	public RunExecutionRequest() {	}
 	
 	public RunExecutionRequest(String executionId,
@@ -50,7 +52,8 @@ public class RunExecutionRequest implements InterfaceMessage {
 							   String useCase,
 							   Map<String, String> infrastructureMetrics,
 							   Map<String, String> applicationMetrics,
-							   Map<String, String> kpiMetrics) {
+							   Map<String, String> kpiMetrics,
+							   boolean perfDiag) {
 		this.executionId = executionId;
 		this.experimentDescriptorId = experimentDescriptorId;
 		if (testCaseDescriptorConfiguration != null) this.testCaseDescriptorConfiguration = testCaseDescriptorConfiguration;
@@ -66,6 +69,7 @@ public class RunExecutionRequest implements InterfaceMessage {
 		if(infrastructureMetrics!=null)this.infrastructureMetrics =infrastructureMetrics;
 		if(kpiMetrics!=null) this.kpiMetrics=kpiMetrics;
 		this.useCase=useCase;
+		this.perfDiag=perfDiag;
 	}
 
 	public Map<String, String> getInfrastructureMetrics() {
@@ -78,6 +82,10 @@ public class RunExecutionRequest implements InterfaceMessage {
 
 	public Map<String, String> getKpiMetrics() {
 		return kpiMetrics;
+	}
+
+	public boolean isPerfDiag() {
+		return perfDiag;
 	}
 
 	/**
