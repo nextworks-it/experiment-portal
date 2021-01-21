@@ -395,6 +395,7 @@ public class ExperimentInstanceManager {
 				String dst = "";
 				List<SapData> sapDatas = new ArrayList<>();
                 List<VsbEndpoint> ranEndpoints = new ArrayList<>();
+                Map<String, String> endpointSite = new HashMap<>();
                 if(vsBlueprint.isInterSite()){
 					log.debug("Computing nested service instantiation");
 					StringJoiner joiner = new StringJoiner("/");
@@ -413,10 +414,27 @@ public class ExperimentInstanceManager {
 						joiner.add(nestedNsdId+":"+component.getCompatibleSite());
 					}
 					dst= joiner.toString();
-					for(VsBlueprint nestedVsb:nestedVsbs.values()){
-					    ranEndpoints.addAll(nestedVsb.getEndPoints().stream()
-                                            .filter(e -> e.isRanConnection())
-                                            .collect(Collectors.toList()));
+
+					for(VsComponent component : vsBlueprint.getAtomicComponents()){
+						if(nestedVsbs.containsKey(component.getComponentId())){
+							log.debug("Adding RAN slice parameters for component:{} ", component.getComponentId());
+							VsBlueprint nestedVsb = nestedVsbs.get(component.getComponentId());
+							ranEndpoints.addAll(nestedVsb.getEndPoints().stream()
+									.filter(e -> e.isRanConnection())
+									.collect(Collectors.toList()));
+							for(VsbEndpoint endpoint: ranEndpoints){
+								if(!endpointSite.containsKey(endpoint.getEndPointId())){
+									log.debug("Assigning endpoint {} to site {}", endpoint.getEndPointId(), component.getCompatibleSite());
+									endpointSite.put(endpoint.getEndPointId(), component.getCompatibleSite());
+
+								}else{
+									log.error("Duplicate endpoint {}", endpoint.getEndPointId());
+									manageExpError("Duplicate endpoint "+endpoint.getEndPointId());
+								}
+							}
+						}
+
+
                     }
 				}else{
 
@@ -426,7 +444,16 @@ public class ExperimentInstanceManager {
 								.filter(e -> e.isRanConnection())
 								.collect(Collectors.toList());
 					//TODO: Assuming just one,
+					for(VsbEndpoint endpoint: ranEndpoints){
+						if(!endpointSite.containsKey(endpoint.getEndPointId())){
+							log.debug("Assigning endpoint {} to site {}", endpoint.getEndPointId(), dst);
+							endpointSite.put(endpoint.getEndPointId(), dst);
 
+						}else{
+							log.error("Duplicate endpoint {}", endpoint.getEndPointId());
+							manageExpError("Duplicate endpoint "+endpoint.getEndPointId());
+						}
+					}
 
 				}
                 Map<String, Object> radioSliceProfile = new HashMap<>();
@@ -449,6 +476,7 @@ public class ExperimentInstanceManager {
                                 radioSliceProfile.put("uLThptPerSlice", uL);
                                 radioSliceProfile.put("dLThptPerSlice", dL);
                                 radioSliceProfile.put("radioAccessTechnology", rAT);
+								radioSliceProfile.put("site", endpointSite.get(ranEndpoint.getEndPointId()));
                                 SapData sapData  = new SapData(ranEndpoint.getEndPointId(),
                                         ranEndpoint.getEndPointId()+"_name",
                                         ranEndpoint.getEndPointId()+"_description",
