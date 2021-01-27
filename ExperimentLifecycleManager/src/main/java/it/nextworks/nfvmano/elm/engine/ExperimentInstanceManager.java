@@ -419,10 +419,11 @@ public class ExperimentInstanceManager {
 						if(nestedVsbs.containsKey(component.getComponentId())){
 							log.debug("Adding RAN slice parameters for component:{} ", component.getComponentId());
 							VsBlueprint nestedVsb = nestedVsbs.get(component.getComponentId());
-							ranEndpoints.addAll(nestedVsb.getEndPoints().stream()
+							List<VsbEndpoint> newEndpoints = nestedVsb.getEndPoints().stream()
 									.filter(e -> e.isRanConnection())
-									.collect(Collectors.toList()));
-							for(VsbEndpoint endpoint: ranEndpoints){
+									.collect(Collectors.toList());
+							ranEndpoints.addAll(newEndpoints);
+							for(VsbEndpoint endpoint: newEndpoints){
 								if(!endpointSite.containsKey(endpoint.getEndPointId())){
 									log.debug("Assigning endpoint {} to site {}", endpoint.getEndPointId(), component.getCompatibleSite());
 									endpointSite.put(endpoint.getEndPointId(), component.getCompatibleSite());
@@ -430,6 +431,7 @@ public class ExperimentInstanceManager {
 								}else{
 									log.error("Duplicate endpoint {}", endpoint.getEndPointId());
 									manageExpError("Duplicate endpoint "+endpoint.getEndPointId());
+									return;
 								}
 							}
 						}
