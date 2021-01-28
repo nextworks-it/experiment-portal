@@ -373,6 +373,8 @@ public class ExperimentInstanceManager {
 			log.debug("Translating experiment descriptor into NFV NS info.");
 			try {
 				NfvNsInstantiationInfo nsInfo = sbiExperimentCatalogueService.translateExpd(experimentDescriptor.getExpDescriptorId());
+				String df = nsInfo.getDeploymentFlavourId();
+				String il = nsInfo.getInstantiationLevelId();
 				List<String> domains = new ArrayList<>();
 				for (EveSite es : targetSites) domains.add(es.toString());
 				nsInfo.setDomainIds(domains);
@@ -397,6 +399,8 @@ public class ExperimentInstanceManager {
                 List<VsbEndpoint> ranEndpoints = new ArrayList<>();
                 Map<String, String> endpointSite = new HashMap<>();
                 if(vsBlueprint.isInterSite()){
+
+                	//TODO: solve df il for multi-site
 					log.debug("Computing nested service instantiation");
 					StringJoiner joiner = new StringJoiner("/");
 					List<VsComponent> serviceComponents = vsBlueprint.getAtomicComponents().stream()
@@ -441,7 +445,11 @@ public class ExperimentInstanceManager {
 				}else{
 
 					dst = targetSites.get(0).toString();
-
+					if(targetSites.get(0)==EveSite.SPAIN_5GROWTH_INNOVALIA||targetSites.get(0)==EveSite.ITALY_5GROWTH_COMAU){
+						log.debug("Setting 5Growth DF and IL");
+						df = nsInfo.getNfvNsdId()+"_"+nsInfo.getDeploymentFlavourId()+"_"+nsInfo.getInstantiationLevelId()+"_df";
+						il = nsInfo.getNfvNsdId()+"_"+nsInfo.getDeploymentFlavourId()+"_"+nsInfo.getInstantiationLevelId()+"_il";
+					}
 					ranEndpoints = vsBlueprint.getEndPoints().stream()
 								.filter(e -> e.isRanConnection())
 								.collect(Collectors.toList());
@@ -501,8 +509,10 @@ public class ExperimentInstanceManager {
 				additionalParamForNs.put("target-site", dst);
 				Map<String, String> vnfPlacement = getVnfPlacementParams();
 				additionalParamForNs.putAll(vnfPlacement);
+
+
 				InstantiateNsRequest instantiateRequest = new InstantiateNsRequest(nsInstanceId,
-						nsInfo.getDeploymentFlavourId(),
+						df,
 						sapDatas,
 						null,
 						null,
@@ -511,7 +521,7 @@ public class ExperimentInstanceManager {
 						additionalParamForNs,
 						null,
 						null,
-						nsInfo.getInstantiationLevelId(),
+						il,
 						null);
 
 				nfvoLcmService.instantiateNs(instantiateRequest);
