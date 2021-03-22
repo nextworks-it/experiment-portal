@@ -14,7 +14,7 @@
       "url": "https://www.apache.org/licenses/LICENSE-2.0\""
     }
   },
-  "host": "localhost:8083",
+  "host": "10.5.7.20:8084",
   "basePath": "/",
   "tags": [
     {
@@ -28,7 +28,7 @@
         "tags": [
           "elm-rest-controller"
         ],
-        "summary": "getAllExperiments",
+        "summary": "Retrieve list of experiments",
         "operationId": "getAllExperimentsUsingGET",
         "produces": [
           "*/*"
@@ -81,9 +81,12 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "List of experiments.",
             "schema": {
-              "type": "object"
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Experiment"
+              }
             }
           },
           "401": {
@@ -102,7 +105,7 @@
         "tags": [
           "elm-rest-controller"
         ],
-        "summary": "createExperiment",
+        "summary": "Request experiment schedule",
         "operationId": "createExperimentUsingPOST",
         "consumes": [
           "application/json"
@@ -152,14 +155,11 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "type": "object"
-            }
-          },
           "201": {
-            "description": "Created"
+            "description": "The ID of the created experiment.",
+            "schema": {
+              "type": "string"
+            }
           },
           "401": {
             "description": "Unauthorized"
@@ -179,7 +179,7 @@
         "tags": [
           "elm-rest-controller"
         ],
-        "summary": "deleteExperiment",
+        "summary": "Delete experiment",
         "operationId": "deleteExperimentUsingDELETE",
         "produces": [
           "*/*"
@@ -224,14 +224,11 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK",
+          "204": {
+            "description": "No Content",
             "schema": {
               "type": "object"
             }
-          },
-          "204": {
-            "description": "No Content"
           },
           "401": {
             "description": "Unauthorized"
@@ -248,7 +245,7 @@
         "tags": [
           "elm-rest-controller"
         ],
-        "summary": "requestExperimentAction",
+        "summary": "Request experiment action",
         "operationId": "requestExperimentActionUsingPOST",
         "consumes": [
           "application/json"
@@ -312,14 +309,14 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Created"
+          },
+          "202": {
+            "description": "Accepted",
             "schema": {
               "type": "object"
             }
-          },
-          "201": {
-            "description": "Created"
           },
           "401": {
             "description": "Unauthorized"
@@ -339,7 +336,7 @@
         "tags": [
           "elm-rest-controller"
         ],
-        "summary": "updateExperimentStatus",
+        "summary": "Update experiment status",
         "operationId": "updateExperimentStatusUsingPUT",
         "consumes": [
           "application/json"
@@ -396,14 +393,14 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Created"
+          },
+          "202": {
+            "description": "Accepted",
             "schema": {
               "type": "object"
             }
-          },
-          "201": {
-            "description": "Created"
           },
           "401": {
             "description": "Unauthorized"
@@ -423,7 +420,7 @@
         "tags": [
           "elm-rest-controller"
         ],
-        "summary": "updateExperimentTimeslot",
+        "summary": "Update experiment timeslot",
         "operationId": "updateExperimentTimeslotUsingPUT",
         "consumes": [
           "application/json"
@@ -480,14 +477,14 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Created"
+          },
+          "202": {
+            "description": "Accepted",
             "schema": {
               "type": "object"
             }
-          },
-          "201": {
-            "description": "Created"
           },
           "401": {
             "description": "Unauthorized"
@@ -513,6 +510,9 @@
         "experimentId": {
           "type": "string"
         },
+        "perfDiag": {
+          "type": "boolean"
+        },
         "testCaseDescriptorConfiguration": {
           "type": "object",
           "additionalProperties": {
@@ -524,6 +524,169 @@
         }
       },
       "title": "ExecuteExperimentRequest"
+    },
+    "ExecutionResult": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "string"
+        },
+        "resultCode": {
+          "type": "string",
+          "enum": [
+            "SUCCESSFUL",
+            "FAILED"
+          ]
+        },
+        "testCaseName": {
+          "type": "string"
+        }
+      },
+      "title": "ExecutionResult"
+    },
+    "Experiment": {
+      "type": "object",
+      "properties": {
+        "applicationMetrics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/MonitoringDataItem"
+          }
+        },
+        "currentExecutionId": {
+          "type": "string"
+        },
+        "errorMessage": {
+          "type": "string"
+        },
+        "executions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ExperimentExecution"
+          }
+        },
+        "experimentDescriptorId": {
+          "type": "string"
+        },
+        "experimentId": {
+          "type": "string"
+        },
+        "infrastrctureMetrics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/MonitoringDataItem"
+          }
+        },
+        "monitoringKpis": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/MonitoringDataItem"
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "nfvNsInstanceId": {
+          "type": "string"
+        },
+        "openTicketIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sapInfo": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ExperimentSapInfo"
+          }
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "SCHEDULING",
+            "ACCEPTED",
+            "READY",
+            "INSTANTIATING",
+            "INSTANTIATED",
+            "RUNNING_EXECUTION",
+            "TERMINATING",
+            "TERMINATED",
+            "FAILED",
+            "REFUSED",
+            "ABORTED"
+          ]
+        },
+        "targetSites": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "ITALY_TURIN",
+              "SPAIN_5TONIC",
+              "FRANCE_PARIS",
+              "FRANCE_NICE",
+              "FRANCE_RENNES",
+              "GREECE_ATHENS",
+              "ITALY_5GROWTH_COMAU",
+              "SPAIN_5GROWTH_INNOVALIA",
+              "FRANCE_CHATILLON",
+              "FRANCE_SACLAY",
+              "FRANCE_SOPHIA_ANTIPOLIS",
+              "FRANCE_LANNION"
+            ]
+          }
+        },
+        "timeslot": {
+          "$ref": "#/definitions/ExperimentExecutionTimeslot"
+        },
+        "useCase": {
+          "type": "string"
+        }
+      },
+      "title": "Experiment"
+    },
+    "ExperimentExecution": {
+      "type": "object",
+      "properties": {
+        "executionId": {
+          "type": "string"
+        },
+        "executionName": {
+          "type": "string"
+        },
+        "reportUrl": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "INIT",
+            "CONFIGURING",
+            "RUNNING",
+            "RUNNING_STEP",
+            "PAUSED",
+            "VALIDATING",
+            "COMPLETED",
+            "ABORTING",
+            "ABORTED",
+            "FAILED"
+          ]
+        },
+        "testCaseDescriptorConfiguration": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TestCaseExecutionConfiguration"
+          }
+        },
+        "testCaseResult": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/ExecutionResult"
+          }
+        }
+      },
+      "title": "ExperimentExecution"
     },
     "ExperimentExecutionTimeslot": {
       "type": "object",
@@ -538,6 +701,24 @@
         }
       },
       "title": "ExperimentExecutionTimeslot"
+    },
+    "ExperimentSapInfo": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "sapName": {
+          "type": "string"
+        },
+        "sapdId": {
+          "type": "string"
+        }
+      },
+      "title": "ExperimentSapInfo"
     },
     "ExperimentSchedulingRequest": {
       "type": "object",
@@ -561,7 +742,13 @@
               "FRANCE_PARIS",
               "FRANCE_NICE",
               "FRANCE_RENNES",
-              "GREECE_ATHENS"
+              "GREECE_ATHENS",
+              "ITALY_5GROWTH_COMAU",
+              "SPAIN_5GROWTH_INNOVALIA",
+              "FRANCE_CHATILLON",
+              "FRANCE_SACLAY",
+              "FRANCE_SOPHIA_ANTIPOLIS",
+              "FRANCE_LANNION"
             ]
           }
         },
@@ -589,6 +776,88 @@
         }
       },
       "title": "ModifyExperimentTimeslotRequest"
+    },
+    "MonitoringDataItem": {
+      "type": "object",
+      "properties": {
+        "dataItemString": {
+          "type": "string"
+        },
+        "expId": {
+          "type": "string"
+        },
+        "mdName": {
+          "type": "string"
+        },
+        "mdt": {
+          "type": "string",
+          "enum": [
+            "APPLICATION_METRIC",
+            "INFRASTRUCTURE_METRIC",
+            "KPI",
+            "RESULT"
+          ]
+        },
+        "metricCollectionType": {
+          "type": "string",
+          "enum": [
+            "CUMULATIVE",
+            "DELTA",
+            "GAUGE"
+          ]
+        },
+        "metricGraphType": {
+          "type": "string",
+          "enum": [
+            "LINE",
+            "PIE",
+            "COUNTER",
+            "GAUGE"
+          ]
+        },
+        "metricInterval": {
+          "type": "string"
+        },
+        "metricName": {
+          "type": "string"
+        },
+        "metricUnit": {
+          "type": "string"
+        },
+        "site": {
+          "type": "string",
+          "enum": [
+            "ITALY_TURIN",
+            "SPAIN_5TONIC",
+            "FRANCE_PARIS",
+            "FRANCE_NICE",
+            "FRANCE_RENNES",
+            "GREECE_ATHENS",
+            "ITALY_5GROWTH_COMAU",
+            "SPAIN_5GROWTH_INNOVALIA",
+            "FRANCE_CHATILLON",
+            "FRANCE_SACLAY",
+            "FRANCE_SOPHIA_ANTIPOLIS",
+            "FRANCE_LANNION"
+          ]
+        }
+      },
+      "title": "MonitoringDataItem"
+    },
+    "TestCaseExecutionConfiguration": {
+      "type": "object",
+      "properties": {
+        "execConfiguration": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "tcDescriptorId": {
+          "type": "string"
+        }
+      },
+      "title": "TestCaseExecutionConfiguration"
     },
     "UpdateExperimentStatusRequest": {
       "type": "object",
