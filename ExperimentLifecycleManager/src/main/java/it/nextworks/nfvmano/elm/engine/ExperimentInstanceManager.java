@@ -16,11 +16,8 @@
 package it.nextworks.nfvmano.elm.engine;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -31,6 +28,7 @@ import it.nextworks.nfvmano.elm.sbi.ticketing.TicketOperationException;
 import it.nextworks.nfvmano.libs.ifa.common.exceptions.MalformattedElementException;
 import it.nextworks.nfvmano.libs.ifa.common.exceptions.MethodNotImplementedException;
 import it.nextworks.nfvmano.libs.ifa.common.exceptions.NotExistingEntityException;
+import it.nextworks.nfvmano.libs.ifa.osmanfvo.nslcm.interfaces.elements.SapData;
 import it.nextworks.nfvmano.libs.ifa.osmanfvo.nslcm.interfaces.messages.QueryNsResponse;
 import it.nextworks.nfvmano.libs.ifa.records.nsinfo.SapInfo;
 import org.slf4j.Logger;
@@ -68,18 +66,12 @@ import it.nextworks.nfvmano.elm.sbi.ticketing.TicketingSystemService;
 import it.nextworks.nfvmano.libs.ifa.common.elements.Filter;
 import it.nextworks.nfvmano.libs.ifa.common.exceptions.FailedOperationException;
 import it.nextworks.nfvmano.libs.ifa.common.messages.GeneralizedQueryRequest;
-import it.nextworks.nfvmano.libs.ifa.common.messages.SubscribeRequest;
-import it.nextworks.nfvmano.libs.ifa.descriptors.nsd.NsDf;
-import it.nextworks.nfvmano.libs.ifa.descriptors.nsd.NsLevel;
-import it.nextworks.nfvmano.libs.ifa.descriptors.nsd.Nsd;
 import it.nextworks.nfvmano.libs.ifa.osmanfvo.nslcm.interfaces.messages.CreateNsIdentifierRequest;
 import it.nextworks.nfvmano.libs.ifa.osmanfvo.nslcm.interfaces.messages.InstantiateNsRequest;
 import it.nextworks.nfvmano.libs.ifa.osmanfvo.nslcm.interfaces.messages.TerminateNsRequest;
 import it.nextworks.nfvmano.nfvodriver.NfvoLcmService;
 import it.nextworks.nfvmano.nfvodriver.NsStatusChange;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
-
-import javax.annotation.PostConstruct;
 
 public class ExperimentInstanceManager {
 
@@ -105,7 +97,10 @@ public class ExperimentInstanceManager {
 	private EemService eemService;
 
 	private ExpBlueprint experimentBlueprint;
+	private ExpBlueprintInfo expBlueprintInfo;
+
 	private VsBlueprint vsBlueprint;
+	private Map<String, VsBlueprint> nestedVsbs = new HashMap<>();
 	private List<CtxBlueprint> ctxBlueprints = new ArrayList<>();
 	private List<TestCaseBlueprint> tcBlueprints = new ArrayList<>();
 
@@ -121,6 +116,7 @@ public class ExperimentInstanceManager {
 
 	private Map<String, String> ticketingAddresses;
 
+	//private Map<String, EveSite> perServiceSites = new HashMap<>();
 
 	private List<String> openTicketIds = new ArrayList<>();
 
@@ -136,7 +132,9 @@ public class ExperimentInstanceManager {
 									 DataCollectionManagerDriver dcmDriver,
 									 EemService eemService,
 									 boolean loadFromCatalogue,
-									 Map<String, String> ticketingAddresses) {
+									 Map<String, String> ticketingAddresses
+	//								 Map<String, EveSite> perServiceSites
+	) {
 		this.experimentId = experimentId;
 		this.experimentDescriptor = experimentDescriptor;
 		this.tenantId = tenantId;
@@ -153,6 +151,7 @@ public class ExperimentInstanceManager {
 		this.dcmDriver = dcmDriver;
 		this.eemService = eemService;
 		this.ticketingAddresses=ticketingAddresses;
+		//if(perServiceSites!=null) this.perServiceSites= perServiceSites;
 		try {
 			if(loadFromCatalogue) loadInformationFromPortalCatalogue();
 		} catch (Exception e) {
@@ -179,7 +178,10 @@ public class ExperimentInstanceManager {
 									 DataCollectionManagerDriver dcmDriver,
 									 EemService eemService,
 									 boolean loadFromCatalogue,
-									 Map<String,String> ticketingAddresses) {
+									 Map<String,String> ticketingAddresses
+
+	//								 Map<String, EveSite> perServiceSites
+	) {
 		this.experimentId = experimentId;
 		this.experimentDescriptor = experimentDescriptor;
 		this.tenantId = tenantId;
@@ -198,6 +200,7 @@ public class ExperimentInstanceManager {
 		this.dcmDriver = dcmDriver;
 		this.eemService = eemService;
 		this.ticketingAddresses=ticketingAddresses;
+		//if(perServiceSites!=null) this.perServiceSites= perServiceSites;
 		try {
 			if(loadFromCatalogue) loadInformationFromPortalCatalogue();
 		} catch (Exception e) {
@@ -369,6 +372,8 @@ public class ExperimentInstanceManager {
 			log.debug("Translating experiment descriptor into NFV NS info.");
 			try {
 				NfvNsInstantiationInfo nsInfo = sbiExperimentCatalogueService.translateExpd(experimentDescriptor.getExpDescriptorId());
+				String df = nsInfo.getDeploymentFlavourId();
+				String il = nsInfo.getInstantiationLevelId();
 				List<String> domains = new ArrayList<>();
 				for (EveSite es : targetSites) domains.add(es.toString());
 				nsInfo.setDomainIds(domains);
@@ -387,16 +392,127 @@ public class ExperimentInstanceManager {
 				experimentRecordManager.setExperimentCurrentMsnoSubscriptionId(experimentId, this.msnoSubscriptionId);
 
 				Map<String, String> additionalParamForNs = new HashMap<String, String>();
+
 				String dst = "";
-				//for (EveSite es : targetSites) dst += es.toString() + ";";
-				//one single site at the moment
-				dst = targetSites.get(0).toString();
+				List<SapData> sapDatas = new ArrayList<>();
+                List<VsbEndpoint> ranEndpoints = new ArrayList<>();
+                Map<String, String> endpointSite = new HashMap<>();
+                if(vsBlueprint.isInterSite()){
+
+                	//TODO: solve df il for multi-site
+					log.debug("Computing nested service instantiation");
+					StringJoiner joiner = new StringJoiner("/");
+					List<VsComponent> serviceComponents = vsBlueprint.getAtomicComponents().stream()
+								.filter(c -> c.getType().equals(VsComponentType.SERVICE))
+								.collect(Collectors.toList());
+					//for(String componentId: perServiceSites.keySet() ){
+					for(VsComponent component: serviceComponents ){
+						if(nsInfo.getNestedVsTranslation()== null || !nsInfo.getNestedVsTranslation().containsKey(component.getComponentId())){
+							throw new MalformattedElementException("Could not find translation for component:"+component.getComponentId());
+						}
+						NfvNsInstantiationInfo nestedNsdInstantiationInfo = nsInfo.getNestedVsTranslation().get(component.getComponentId());
+						String nestedNsdId = getNsDescriptorId(nestedNsdInstantiationInfo.getNfvNsdId(),
+								nestedNsdInstantiationInfo.getDeploymentFlavourId(),
+								nestedNsdInstantiationInfo.getInstantiationLevelId());
+						joiner.add(nestedNsdId+":"+component.getCompatibleSite());
+					}
+					dst= joiner.toString();
+
+					for(VsComponent component : vsBlueprint.getAtomicComponents()){
+						if(nestedVsbs.containsKey(component.getComponentId())){
+							log.debug("Adding RAN slice parameters for component:{} ", component.getComponentId());
+							VsBlueprint nestedVsb = nestedVsbs.get(component.getComponentId());
+							List<VsbEndpoint> newEndpoints = nestedVsb.getEndPoints().stream()
+									.filter(e -> e.isRanConnection())
+									.collect(Collectors.toList());
+							ranEndpoints.addAll(newEndpoints);
+							for(VsbEndpoint endpoint: newEndpoints){
+								if(!endpointSite.containsKey(endpoint.getEndPointId())){
+									log.debug("Assigning endpoint {} to site {}", endpoint.getEndPointId(), component.getCompatibleSite());
+									endpointSite.put(endpoint.getEndPointId(), component.getCompatibleSite());
+
+								}else{
+									log.error("Duplicate endpoint {}", endpoint.getEndPointId());
+									manageExpError("Duplicate endpoint "+endpoint.getEndPointId());
+									return;
+								}
+							}
+						}
+
+
+                    }
+				}else{
+
+					dst = targetSites.get(0).toString();
+					if(targetSites.get(0)==EveSite.SPAIN_5GROWTH_INNOVALIA||targetSites.get(0)==EveSite.ITALY_5GROWTH_COMAU){
+						log.debug("Setting 5Growth DF and IL");
+						df = nsInfo.getNfvNsdId()+"_"+nsInfo.getDeploymentFlavourId()+"_"+nsInfo.getInstantiationLevelId()+"_df";
+						il = nsInfo.getNfvNsdId()+"_"+nsInfo.getDeploymentFlavourId()+"_"+nsInfo.getInstantiationLevelId()+"_il";
+					}
+					ranEndpoints = vsBlueprint.getEndPoints().stream()
+								.filter(e -> e.isRanConnection())
+								.collect(Collectors.toList());
+					//TODO: Assuming just one,
+					for(VsbEndpoint endpoint: ranEndpoints){
+						if(!endpointSite.containsKey(endpoint.getEndPointId())){
+							log.debug("Assigning endpoint {} to site {}", endpoint.getEndPointId(), dst);
+							endpointSite.put(endpoint.getEndPointId(), dst);
+
+						}else{
+							log.error("Duplicate endpoint {}", endpoint.getEndPointId());
+							manageExpError("Duplicate endpoint "+endpoint.getEndPointId());
+						}
+					}
+
+				}
+                Map<String, Object> radioSliceProfile = new HashMap<>();
+                if(ranEndpoints!=null && !ranEndpoints.isEmpty()){
+                    log.debug("Computing RAN SAP data");
+                    for(VsbEndpoint ranEndpoint: ranEndpoints){
+                        if(vsDescriptor.getSliceProfiles().containsKey(ranEndpoint.getEndPointId())){
+                            log.debug("Computing RAN parameters for endpoint:"+ranEndpoint.getEndPointId());
+                            String coverageArea = ranEndpoint.getCoverageArea();
+                            if(ranEndpoint.getSliceType()!=null) {
+                                String sST = getRANSST(ranEndpoint.getSliceType());
+                                SliceProfile sliceProfile = vsDescriptor.getSliceProfiles().get(ranEndpoint.getEndPointId());
+                                String dL = sliceProfile.getDownlinkThroughput();
+                                String uL = sliceProfile.getUplinkThroughput();
+                                String rAT = getRAT(sliceProfile.getRadioAccessTechnology());
+                                String latency = sliceProfile.getLatency();
+                                radioSliceProfile.put("sST", sST);
+                                radioSliceProfile.put("coverageArea", coverageArea);
+                                radioSliceProfile.put("latency", latency);
+                                radioSliceProfile.put("uLThptPerSlice", uL);
+                                radioSliceProfile.put("dLThptPerSlice", dL);
+                                radioSliceProfile.put("radioAccessTechnology", rAT);
+								radioSliceProfile.put("site", endpointSite.get(ranEndpoint.getEndPointId()));
+                                SapData sapData  = new SapData(ranEndpoint.getEndPointId(),
+                                        ranEndpoint.getEndPointId()+"_name",
+                                        ranEndpoint.getEndPointId()+"_description",
+                                        null,
+                                        null,
+                                        radioSliceProfile);
+                                sapDatas.add(sapData);
+
+                            }else log.debug("Ignoring endpoint due to null sliceType");
+
+                        }
+
+                    }
+
+
+
+
+
+                }
 				additionalParamForNs.put("target-site", dst);
 				Map<String, String> vnfPlacement = getVnfPlacementParams();
 				additionalParamForNs.putAll(vnfPlacement);
+
+
 				InstantiateNsRequest instantiateRequest = new InstantiateNsRequest(nsInstanceId,
-						nsInfo.getDeploymentFlavourId(),
-						null,
+						df,
+						sapDatas,
 						null,
 						null,
 						null,
@@ -404,7 +520,7 @@ public class ExperimentInstanceManager {
 						additionalParamForNs,
 						null,
 						null,
-						nsInfo.getInstantiationLevelId(),
+						il,
 						null);
 
 				nfvoLcmService.instantiateNs(instantiateRequest);
@@ -452,7 +568,44 @@ public class ExperimentInstanceManager {
 
 	}
 
-    private Map<String, String> getVnfPlacementParams() {
+	private String getRANSST(SliceServiceType sliceType) {
+
+	    if(sliceType== SliceServiceType.EMBB){
+			return "eMBB";
+		}else{
+			//TODO
+			return sliceType.toString();
+		}
+	}
+
+	private String getRAT(RadioAccessTechnology rat){
+		//
+        //"4G",
+        //"5GNSA",
+        //"5GSA",
+        //"NB-IoT",
+        //"LTE-M",
+        //"5GmmWave";
+		if(rat.equals(RadioAccessTechnology.FOUR_G)){
+		    return "4G";
+        }else if(rat.equals(RadioAccessTechnology.FIVE_G_NSA)){
+		    return "5GNSA";
+        }else if(rat.equals(RadioAccessTechnology.FIVE_G_SA)){
+            return "5GSA";
+        }else if(rat.equals(RadioAccessTechnology.NB_IoT)){
+            return "NB-IoT";
+        }else if(rat.equals(RadioAccessTechnology.LTE_M)){
+            return "LTE-M";
+        }else if(rat.equals(RadioAccessTechnology.FIVE_G_mmWave)){
+            return "5GmmWave";
+        }else{
+		    log.debug("Uknown RAT type:{}",rat);
+		    return "";
+        }
+
+	}
+
+	private Map<String, String> getVnfPlacementParams() {
 	    Map<String, String> values = new HashMap<>();
 	    if(this.vsBlueprint.getAtomicComponents()!=null && !this.vsBlueprint.getAtomicComponents().isEmpty()){
             log.debug("Generating VNF placement parameters");
@@ -501,7 +654,14 @@ public class ExperimentInstanceManager {
 			experimentRecordManager.setExperimentCurrentEemSubscriptionId(experimentId, eemSubscriptionId);
 			log.debug("Created subscription " + eemSubscriptionId + " for execution " + currentExecutionId);
 			List<String> siteNames = new ArrayList<>();
-			siteNames.add(targetSites.get(0).toString());
+			if(!vsBlueprint.isInterSite()){
+				siteNames.add(targetSites.get(0).toString());
+			}else{
+				siteNames = targetSites.stream()
+							.map(site -> site.toString())
+							.collect(Collectors.toList());
+			}
+
 			experimentRecordManager.createExperimentExecution(experimentId,
 					currentExecutionId,
 					executionName,
@@ -516,7 +676,11 @@ public class ExperimentInstanceManager {
 					tenantId,
 					siteNames,
 					experimentId,
-					experiment.getUseCase()
+					experiment.getUseCase(),
+					computeMetricTopics(infrastructureMonitoringMetrics),
+					computeMetricTopics(applicationMonitoringMetrics),
+					computeMetricTopics(monitoringKpis),
+                    msg.getRequest().getPerfDiag()
 			));
 			log.debug("Requested execution run to EEM");
 		} catch (Exception e) {
@@ -524,6 +688,15 @@ public class ExperimentInstanceManager {
 			log.error("Error while requesting the experiment execution: " + e.getMessage());
 			manageExpError(e.getMessage());
 		}
+	}
+
+	private Map<String, String> computeMetricTopics(List<MonitoringDataItem> dataItems){
+		log.debug("Computing metric topics");
+		Map<String, String> metricMap = new HashMap<>();
+		for(MonitoringDataItem dataItem : dataItems){
+			metricMap.put(dataItem.getMdName(), dataItem.getDataItemString());
+		}
+		return metricMap;
 	}
 
 	private void processEemNotification(EemNotificationInternalMessage msg) {
@@ -712,7 +885,7 @@ public class ExperimentInstanceManager {
 	private void subscribeForMonitoring() throws FailedOperationException {
 		log.debug("Retrieving metrics for monitoring subscription");
 		List<InfrastructureMetric> expbMetrics = experimentBlueprint.getMetrics();
-		List<ApplicationMetric> applicationMetrics = vsBlueprint.getApplicationMetrics();
+
 		Experiment experiment = null;
 		try {
 			experiment=experimentRecordManager.retrieveExperimentFromId(experimentId);
@@ -721,46 +894,96 @@ public class ExperimentInstanceManager {
 			throw  new FailedOperationException(e.getMessage());
 		}
 		String useCase = experiment.getUseCase();
-		for (CtxBlueprint cb : ctxBlueprints) {
-			applicationMetrics.addAll(cb.getApplicationMetrics());
-		}
-		//at the moment we manage a single site
-		EveSite site = targetSites.get(0);
+
+
+		EveSite defaultSite = targetSites.get(0);
 		for (InfrastructureMetric im : expbMetrics) {
 			log.debug("Infrastructure metric: " + " ID: " + im.getMetricId() + " Name: " + im.getName());
 			String imMetricId = im.getMetricId();
 			//TODO:Changed to use the metricType
 			imMetricId = im.getiMetricType().toString();
+			EveSite site = defaultSite;
+			if(vsBlueprint.isInterSite()){
+				site=EveSite.valueOf(im.getTargetSite());
+			}
 			MonitoringDataItem dataItem = new MonitoringDataItem(experimentId, MonitoringDataType.INFRASTRUCTURE_METRIC, site, imMetricId ,
 					im.getName(), im.getMetricGraphType(), im.getMetricCollectionType(), im.getUnit(), im.getInterval(), useCase);
 			infrastructureMonitoringMetrics.add(dataItem);
 			log.debug("adding application metric: "+im.getMetricId());
 
 		}
-		for (ApplicationMetric am : applicationMetrics) {
-			log.debug("Application metric: " + " ID: " + am.getMetricId() + " Name: " + am.getName());
-			MonitoringDataItem dataItem = new MonitoringDataItem(experimentId, MonitoringDataType.APPLICATION_METRIC, site, am.getMetricId(),
-					am.getName(), am.getMetricGraphType(), am.getMetricCollectionType(), am.getUnit(), am.getInterval(), useCase);
-			applicationMonitoringMetrics.add(dataItem);
-			log.debug("adding application metric: "+am.getMetricId());
+
+		//APPLICATION METRICS
+
+		if(!vsBlueprint.isInterSite()){
+			log.debug("Configuring single site monitoring metrics");
+			List<ApplicationMetric> applicationMetrics = vsBlueprint.getApplicationMetrics();
+			for (CtxBlueprint cb : ctxBlueprints) {
+				applicationMetrics.addAll(cb.getApplicationMetrics());
+			}
+			for (ApplicationMetric am : applicationMetrics) {
+				log.debug("Application metric: " + " ID: " + am.getMetricId() + " Name: " + am.getName());
+				EveSite site = defaultSite;
+				MonitoringDataItem dataItem = new MonitoringDataItem(experimentId, MonitoringDataType.APPLICATION_METRIC, site, am.getMetricId(),
+						am.getName(), am.getMetricGraphType(), am.getMetricCollectionType(), am.getUnit(), am.getInterval(), useCase);
+				applicationMonitoringMetrics.add(dataItem);
+				log.debug("adding application metric: "+am.getMetricId());
+			}
+		}else{
+			log.debug("Configuring inter site monitoring metrics");
+			List<VsComponent> serviceComponents = vsBlueprint.getAtomicComponents().stream()
+					.filter(c -> c.getType().equals(VsComponentType.SERVICE))
+					.collect(Collectors.toList());
+			Map<String, EveSite> componentSite = new HashMap<>();
+			for(VsComponent component: serviceComponents){
+				VsBlueprint nestedVsb = nestedVsbs.get(component.getComponentId());
+				List<ApplicationMetric> applicationMetrics = nestedVsb.getApplicationMetrics();
+				EveSite site = EveSite.valueOf(component.getCompatibleSite());
+				componentSite.put(component.getComponentId(),site );
+				for (ApplicationMetric am : applicationMetrics) {
+					log.debug("Application metric: " + " ID: " + am.getMetricId() + " Name: " + am.getName());
+
+
+					MonitoringDataItem dataItem = new MonitoringDataItem(experimentId, MonitoringDataType.APPLICATION_METRIC, site, am.getMetricId(),
+							am.getName(), am.getMetricGraphType(), am.getMetricCollectionType(), am.getUnit(), am.getInterval(), useCase);
+					applicationMonitoringMetrics.add(dataItem);
+					log.debug("adding application metric: "+am.getMetricId());
+				}
+			}
+			for (CtxBlueprint cb : ctxBlueprints) {
+				for (ApplicationMetric am : cb.getApplicationMetrics()) {
+
+					String componentId = expBlueprintInfo.getContextComponent().get(cb.getBlueprintId());
+					log.debug("Application metric from Context: " + " ID: " + am.getMetricId() + " Name: " + am.getName()+" associated with component:"+componentId);
+					MonitoringDataItem dataItem = new MonitoringDataItem(experimentId, MonitoringDataType.APPLICATION_METRIC, componentSite.get(componentId), am.getMetricId(),
+							am.getName(), am.getMetricGraphType(), am.getMetricCollectionType(), am.getUnit(), am.getInterval(), useCase);
+					applicationMonitoringMetrics.add(dataItem);
+					log.debug("adding application metric: "+am.getMetricId());
+				}
+			}
 		}
+
 		dcmDriver.subscribe(infrastructureMonitoringMetrics, MonitoringDataType.INFRASTRUCTURE_METRIC);
 		dcmDriver.subscribe(applicationMonitoringMetrics, MonitoringDataType.APPLICATION_METRIC);
 		log.debug("Subscribed for monitoring metrics");
-
+		experimentRecordManager.updateExperimentInfrastructureMetrics(experimentId, infrastructureMonitoringMetrics);
+		experimentRecordManager.updateExperimentApplicationMetrics(experimentId, applicationMonitoringMetrics);
 		log.debug("Retrieving KPIs for monitoring subscription");
 		List<KeyPerformanceIndicator> kpis = experimentBlueprint.getKpis();
 		for (KeyPerformanceIndicator kpi : kpis) {
-			MonitoringDataItem dataItem = new MonitoringDataItem(experimentId, MonitoringDataType.KPI, site, kpi.getKpiId(),
+			MonitoringDataItem dataItem = new MonitoringDataItem(experimentId, MonitoringDataType.KPI, defaultSite, kpi.getKpiId(),
 					kpi.getName(), kpi.getKpiGraphType(), null , kpi.getUnit(), kpi.getInterval(), useCase );
 			monitoringKpis.add(dataItem);
 		}
 		dcmDriver.subscribe(monitoringKpis, MonitoringDataType.KPI);
 		log.debug("Subscribed for monitoring KPIs");
-
+		experimentRecordManager.updateExperimentMonitoringKpis(experimentId, monitoringKpis);
 		log.debug("Retrieving results for monitoring subscription - not supported at the moment");
 		//TODO: Add subscription for experiment results when available
 	}
+
+
+
 
 	private void unsubscribeFromMonitoring() throws FailedOperationException {
 		log.debug("Removing monitoring subscriptions for experiment " + experimentId);
@@ -775,6 +998,7 @@ public class ExperimentInstanceManager {
 
 		String experimentBlueprintId = experimentDescriptor.getExpBlueprintId();
 		QueryExpBlueprintResponse expB = sbiExperimentCatalogueService.queryExpBlueprint(buildQueryForParameter("ExpB_ID", experimentBlueprintId));
+		expBlueprintInfo = expB.getExpBlueprintInfo().get(0);
 		experimentBlueprint = expB.getExpBlueprintInfo().get(0).getExpBlueprint();
 
 		String vsBlueprintId = experimentBlueprint.getVsBlueprintId();
@@ -782,6 +1006,17 @@ public class ExperimentInstanceManager {
 		vsBlueprint = vsb.getVsBlueprintInfo().get(0).getVsBlueprint();
 		List<String> ctxBlueprintIds = experimentBlueprint.getCtxBlueprintIds();
 
+		if(vsBlueprint.isInterSite()){
+			for(VsComponent component: vsBlueprint.getAtomicComponents()){
+				if(component.getType()==VsComponentType.SERVICE){
+					log.debug("Retrieving nested VSBs");
+					QueryVsBlueprintResponse nestedVsbResponse = sbiExperimentCatalogueService.queryVsBlueprint(buildQueryForParameter("VSB_ID", component.getAssociatedVsbId()));
+					this.nestedVsbs.put(component.getComponentId(), nestedVsbResponse.getVsBlueprintInfo().get(0).getVsBlueprint());
+				}
+			}
+
+
+		}
 		if(ctxBlueprintIds!=null && ! ctxBlueprintIds.isEmpty()){
 			for (String id : ctxBlueprintIds) {
 				QueryCtxBlueprintResponse ctxB = sbiExperimentCatalogueService.queryCtxBlueprint(buildQueryForParameter("CTXB_ID", id));
@@ -802,6 +1037,7 @@ public class ExperimentInstanceManager {
 		String vsdId = experimentDescriptor.getVsDescriptorId();
 		QueryVsDescriptorResponse vsd = sbiExperimentCatalogueService.queryVsDescriptor(buildQueryForParameter("VSD_ID", vsdId));
 		vsDescriptor = vsd.getVsDescriptors().get(0);
+
 
 
 		List<String> ctxDescriptorIds = experimentDescriptor.getCtxDescriptorIds();
@@ -825,6 +1061,8 @@ public class ExperimentInstanceManager {
 		}else{
 			log.debug("Experiment without testcase descriptor");
 		}
+
+
 
 		log.debug("Loaded all the blueprints and descriptor information from portal catalogue");
 	}

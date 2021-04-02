@@ -16,9 +16,7 @@
 package it.nextworks.nfvmano.elm.im;
 
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import javax.persistence.CascadeType;
 import javax.persistence.CollectionTable;
@@ -98,8 +96,14 @@ public class Experiment {
 	@ElementCollection(fetch=FetchType.EAGER)
 	@Fetch(FetchMode.SELECT)
 	@Cascade(org.hibernate.annotations.CascadeType.ALL)
-	private List<MonitoringDataItem> monitoringMetrics = new ArrayList<>();
-	
+	private List<MonitoringDataItem> infrastructureMetrics = new ArrayList<>();
+
+	@JsonInclude(JsonInclude.Include.NON_EMPTY)
+	@ElementCollection(fetch=FetchType.EAGER)
+	@Fetch(FetchMode.SELECT)
+	@Cascade(org.hibernate.annotations.CascadeType.ALL)
+	private List<MonitoringDataItem> applicationMetrics = new ArrayList<>();
+
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
 	@ElementCollection(fetch=FetchType.EAGER)
     @CollectionTable(name="KPI")
@@ -119,6 +123,15 @@ public class Experiment {
 	@LazyCollection(LazyCollectionOption.FALSE)
 	private List<ExperimentSapInfo> sapInfo = new ArrayList<>();
 
+/*
+	@JsonInclude(JsonInclude.Include.NON_EMPTY)
+	@ElementCollection(fetch=FetchType.EAGER)
+	@Fetch(FetchMode.SELECT)
+	@Cascade(org.hibernate.annotations.CascadeType.ALL)
+	private Map<String, EveSite> perServiceSite = new HashMap<>();
+
+
+ */
 
     private String useCase;
 
@@ -131,7 +144,9 @@ public class Experiment {
     		String tenantId,
     		ExperimentExecutionTimeslot timeslot,
     		List<EveSite> targetSites,
-					  String useCase) {
+					  String useCase
+	//				  ,Map<String, EveSite> perServiceSite
+	) {
     	this.tenantId = tenantId;
     	this.experimentDescriptorId = experimentDescriptorId;
     	this.name = name;
@@ -139,6 +154,7 @@ public class Experiment {
     	this.timeslot = timeslot;
     	if (targetSites != null) this.targetSites = targetSites;
     	this.useCase = useCase;
+    //	if(perServiceSite!=null) this.perServiceSite=perServiceSite;
 	}
 
 
@@ -176,7 +192,11 @@ public class Experiment {
 		this.experimentDescriptorId = experimentDescriptorId;
 	}
 
-
+/*
+	public Map<String, EveSite> getPerServiceSite() {
+		return perServiceSite;
+	}
+*/
 	/**
 	 * @param currentMsnoSubscriptionId the currentMsnoSubscriptionId to set
 	 */
@@ -321,15 +341,24 @@ public class Experiment {
 	/**
 	 * @return the monitoringMetrics
 	 */
-	public List<MonitoringDataItem> getMonitoringMetrics() {
-		return monitoringMetrics;
+	public List<MonitoringDataItem> getInfrastrctureMetrics() {
+		return infrastructureMetrics;
 	}
 
 	/**
 	 * @param monitoringMetrics the monitoringMetrics to set
 	 */
-	public void setMonitoringMetrics(List<MonitoringDataItem> monitoringMetrics) {
-		this.monitoringMetrics = monitoringMetrics;
+	public void setInfrastructureMetrics(List<MonitoringDataItem> monitoringMetrics) {
+		this.infrastructureMetrics = monitoringMetrics;
+	}
+
+
+	public List<MonitoringDataItem> getApplicationMetrics() {
+		return applicationMetrics;
+	}
+
+	public void setApplicationMetrics(List<MonitoringDataItem> applicationMetrics) {
+		this.applicationMetrics = applicationMetrics;
 	}
 
 	/**

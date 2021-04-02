@@ -16,7 +16,9 @@
 package it.nextworks.nfvmano.elm.nbi.messages;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -40,6 +42,12 @@ public class ExperimentSchedulingRequest implements InterfaceMessage {
 	private List<EveSite> targetSites = new ArrayList<EveSite>();
 
 
+
+	/*
+	//Key the VSB component ID
+	@JsonProperty("perServiceSites")
+	private Map<String, EveSite> perServiceSites = new HashMap<>();
+	*/
 	@JsonProperty("useCase")
 	private String useCase;
 	
@@ -50,15 +58,20 @@ public class ExperimentSchedulingRequest implements InterfaceMessage {
 									   @JsonProperty("experimentDescriptorId") String experimentDescriptorId,
 									   @JsonProperty("proposedTimeSlot") ExperimentExecutionTimeslot proposedTimeSlot,
 									   @JsonProperty("targetSites")List<EveSite> targetSites,
-									   @JsonProperty("useCase")String useCase) {
+									   @JsonProperty("useCase")String useCase
+									   //@JsonProperty("perServiceSites")Map<String, EveSite> perServiceSites
+								) {
 		this.experimentName = experimentName;
 		this.experimentDescriptorId = experimentDescriptorId;
 		this.proposedTimeSlot = proposedTimeSlot;
 		if (targetSites != null) this.targetSites = targetSites;
 		this.useCase=useCase;
+		//this.perServiceSites=perServiceSites;
 	}
-	
-	
+
+	//public Map<String, EveSite> getPerServiceSites() {
+	//	return perServiceSites;
+	//}
 
 	/**
 	 * @return the experimentName

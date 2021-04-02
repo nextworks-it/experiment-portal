@@ -4,6 +4,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 import it.nextworks.nfvmano.catalogue.blueprint.elements.EveSite;
 import it.nextworks.nfvmano.elm.sbi.rbac.RbacService;
 import org.keycloak.KeycloakPrincipal;
@@ -16,13 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import it.nextworks.nfvmano.elm.engine.ExperimentLifecycleManagerEngine;
 import it.nextworks.nfvmano.elm.im.Experiment;
@@ -111,6 +108,16 @@ public class ElmRestController {
 	
 	public ElmRestController() { }
 
+	@ApiOperation(value = "Request experiment schedule")
+	@ApiResponses(value = {
+			@ApiResponse(code = 201, message = "The ID of the created experiment.", response = String.class),
+			//@ApiResponse(code = 400, message = "The request contains elements impossible to process", response = ResponseEntity.class),
+			//@ApiResponse(code = 409, message = "There is a conflict with the request", response = ResponseEntity.class),
+			//@ApiResponse(code = 500, message = "Status 500", response = ResponseEntity.class)
+
+	})
+	@ResponseStatus(HttpStatus.CREATED)
+
 	@RequestMapping(value = "/experiment", method = RequestMethod.POST)
 	public ResponseEntity<?> createExperiment(@RequestBody ExperimentSchedulingRequest request, Authentication auth) {
 		log.debug("Received request to schedule an experiment.");
@@ -138,7 +145,16 @@ public class ElmRestController {
 			return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
-	
+
+	@ApiOperation(value = "Retrieve list of experiments")
+	@ApiResponses(value = {
+			@ApiResponse(code = 200, message = "List of experiments.", response = Experiment.class, responseContainer = "Set"),
+			//@ApiResponse(code = 400, message = "The request contains elements impossible to process", response = ResponseEntity.class),
+			//@ApiResponse(code = 409, message = "There is a conflict with the request", response = ResponseEntity.class),
+			//@ApiResponse(code = 500, message = "Status 500", response = ResponseEntity.class)
+
+	})
+	@ResponseStatus(HttpStatus.OK)
 	@RequestMapping(value = "/experiment", method = RequestMethod.GET)
 	public ResponseEntity<?> getAllExperiments(@RequestParam(required = false) String expId, @RequestParam(required = false) String expDId, Authentication auth) {
 		log.debug("Received request to retrieve info about experiments.");
@@ -183,6 +199,16 @@ public class ElmRestController {
 
 	}
 
+	@ApiOperation(value = "Update experiment status")
+	@ApiResponses(value = {
+			//@ApiResponse(code = 202, message = "The ID of the created experiment.", response = String.class),
+			//@ApiResponse(code = 400, message = "The request contains elements impossible to process", response = ResponseEntity.class),
+			//@ApiResponse(code = 409, message = "There is a conflict with the request", response = ResponseEntity.class),
+			//@ApiResponse(code = 500, message = "Status 500", response = ResponseEntity.class)
+
+	})
+	@ResponseStatus(HttpStatus.ACCEPTED)
+
 	@RequestMapping(value = "/experiment/{expId}/status", method = RequestMethod.PUT)
 	public ResponseEntity<?> updateExperimentStatus(@RequestBody UpdateExperimentStatusRequest request, @PathVariable String expId, Authentication auth) {
 		log.debug("Received request to update the status of experiment " + expId);
@@ -215,7 +241,16 @@ public class ElmRestController {
 		}
 		
 	}
-	
+
+	@ApiOperation(value = "Update experiment timeslot")
+	@ApiResponses(value = {
+			//@ApiResponse(code = 202, message = "The ID of the created experiment.", response = String.class),
+			//@ApiResponse(code = 400, message = "The request contains elements impossible to process", response = ResponseEntity.class),
+			//@ApiResponse(code = 409, message = "There is a conflict with the request", response = ResponseEntity.class),
+			//@ApiResponse(code = 500, message = "Status 500", response = ResponseEntity.class)
+
+	})
+	@ResponseStatus(HttpStatus.ACCEPTED)
 	@RequestMapping(value = "/experiment/{expId}/timeslot", method = RequestMethod.PUT)
 	public ResponseEntity<?> updateExperimentTimeslot(@RequestBody ModifyExperimentTimeslotRequest request, @PathVariable String expId, Authentication auth) {
 		log.debug("Received request to modify the proposed timeslot for experiment " + expId);
@@ -248,7 +283,16 @@ public class ElmRestController {
 		}
 		
 	}
-	
+
+	@ApiOperation(value = "Request experiment action")
+	@ApiResponses(value = {
+			//@ApiResponse(code = 202, message = "The ID of the created experiment.", response = String.class),
+			//@ApiResponse(code = 400, message = "The request contains elements impossible to process", response = ResponseEntity.class),
+			//@ApiResponse(code = 409, message = "There is a conflict with the request", response = ResponseEntity.class),
+			//@ApiResponse(code = 500, message = "Status 500", response = ResponseEntity.class)
+
+	})
+	@ResponseStatus(HttpStatus.ACCEPTED)
 	@RequestMapping(value = "/experiment/{expId}/action/{action}", method = RequestMethod.POST)
 	public ResponseEntity<?> requestExperimentAction(@RequestBody(required=false) ExecuteExperimentRequest request, @PathVariable String expId, @PathVariable String action, Authentication auth) {
 		log.debug("Received request to perform action " + action + " for experiment " + expId);
@@ -296,6 +340,16 @@ public class ElmRestController {
 			return new ResponseEntity<String>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
+
+	@ApiOperation(value = "Delete experiment")
+	@ApiResponses(value = {
+			//@ApiResponse(code = 202, message = "The ID of the created experiment.", response = String.class),
+			//@ApiResponse(code = 400, message = "The request contains elements impossible to process", response = ResponseEntity.class),
+			//@ApiResponse(code = 409, message = "There is a conflict with the request", response = ResponseEntity.class),
+			//@ApiResponse(code = 500, message = "Status 500", response = ResponseEntity.class)
+
+	})
+	@ResponseStatus(HttpStatus.NO_CONTENT)
 	
 	@RequestMapping(value = "/experiment/{expId}", method = RequestMethod.DELETE)
 	public ResponseEntity<?> deleteExperiment(@PathVariable String expId, Authentication auth) {

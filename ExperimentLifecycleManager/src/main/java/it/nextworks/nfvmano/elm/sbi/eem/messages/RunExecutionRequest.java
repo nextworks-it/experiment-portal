@@ -34,7 +34,12 @@ public class RunExecutionRequest implements InterfaceMessage {
 	private List<String> siteNames = new ArrayList<>();
 	private String experimentId;
 	private String useCase;
-	
+	//key metric id, value: metric topic used
+	private Map<String, String> infrastructureMetrics = new HashMap<>();
+	private Map<String, String> applicationMetrics = new HashMap<>();
+	private Map<String, String> kpiMetrics = new HashMap<>();
+	private boolean perfDiag = false;
+
 	public RunExecutionRequest() {	}
 	
 	public RunExecutionRequest(String executionId,
@@ -44,7 +49,11 @@ public class RunExecutionRequest implements InterfaceMessage {
             String tenantId,
 			List<String> siteNames,
 			String experimentId,
-							   String useCase) {
+							   String useCase,
+							   Map<String, String> infrastructureMetrics,
+							   Map<String, String> applicationMetrics,
+							   Map<String, String> kpiMetrics,
+							   boolean perfDiag) {
 		this.executionId = executionId;
 		this.experimentDescriptorId = experimentDescriptorId;
 		if (testCaseDescriptorConfiguration != null) this.testCaseDescriptorConfiguration = testCaseDescriptorConfiguration;
@@ -56,11 +65,29 @@ public class RunExecutionRequest implements InterfaceMessage {
 				this.siteNames.add(siteName);
 			}
 		}
+		if(applicationMetrics!=null)this.applicationMetrics=applicationMetrics;
+		if(infrastructureMetrics!=null)this.infrastructureMetrics =infrastructureMetrics;
+		if(kpiMetrics!=null) this.kpiMetrics=kpiMetrics;
 		this.useCase=useCase;
+		this.perfDiag=perfDiag;
 	}
 
-	
-	
+	public Map<String, String> getInfrastructureMetrics() {
+		return infrastructureMetrics;
+	}
+
+	public Map<String, String> getApplicationMetrics() {
+		return applicationMetrics;
+	}
+
+	public Map<String, String> getKpiMetrics() {
+		return kpiMetrics;
+	}
+
+	public boolean isPerfDiag() {
+		return perfDiag;
+	}
+
 	/**
 	 * @return the executionId
 	 */

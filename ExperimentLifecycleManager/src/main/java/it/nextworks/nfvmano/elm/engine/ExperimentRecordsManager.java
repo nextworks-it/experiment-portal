@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 
 import it.nextworks.nfvmano.elm.im.*;
 import it.nextworks.nfvmano.elm.repos.ExperimentSapInfoRepository;
+import it.nextworks.nfvmano.elm.sbi.monitoring.MonitoringDataItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,9 +58,13 @@ public class ExperimentRecordsManager {
 	
 	public ExperimentRecordsManager() {	}
 	
-	public synchronized String createExperiment(String experimentDescriptorId, String experimentName, String tenantId, ExperimentExecutionTimeslot timeslot, List<EveSite> targetSites, String useCase) {
+	public synchronized String createExperiment(String experimentDescriptorId, String experimentName, String tenantId, ExperimentExecutionTimeslot timeslot, List<EveSite> targetSites, String useCase
+												//,Map<String, EveSite> perServiceSite
+	) {
 		log.debug("Storing a new experiment instance in DB.");
-		Experiment experiment = new Experiment(experimentDescriptorId, experimentName, tenantId, timeslot, targetSites, useCase);
+		Experiment experiment = new Experiment(experimentDescriptorId, experimentName, tenantId, timeslot, targetSites, useCase
+				//, perServiceSite
+				);
 		experimentRepository.saveAndFlush(experiment);
 		UUID id = experiment.getId();
 		String experimentId = id.toString();
@@ -185,6 +190,40 @@ public class ExperimentRecordsManager {
 			experimentExecutionRepository.saveAndFlush(ee);
 		} catch (Exception e) {
 			log.error("Impossible to update experiment execution results in DB: " + e.getMessage());
+		}
+	}
+
+	public synchronized void updateExperimentInfrastructureMetrics(String experimentId, List<MonitoringDataItem> metrics){
+		log.debug("Updating experiment infrastructure metrics");
+		try {
+			Experiment experiment = retrieveExperimentFromId(experimentId);
+			experiment.setInfrastructureMetrics(metrics);
+			experimentRepository.saveAndFlush(experiment);
+		} catch (NotExistingEntityException e) {
+			log.error("Unable to retrieve experiment information",e);
+		}
+	}
+
+
+	public synchronized void updateExperimentApplicationMetrics(String experimentId, List<MonitoringDataItem> metrics){
+		log.debug("Updating experiment infrastructure metrics");
+		try {
+			Experiment experiment = retrieveExperimentFromId(experimentId);
+			experiment.setApplicationMetrics(metrics);
+			experimentRepository.saveAndFlush(experiment);
+		} catch (NotExistingEntityException e) {
+			log.error("Unable to retrieve experiment information",e);
+		}
+	}
+
+	public synchronized  void updateExperimentMonitoringKpis(String experimentId, List<MonitoringDataItem> metrics){
+		log.debug("Updating experiment infrastructure metrics");
+		try {
+			Experiment experiment = retrieveExperimentFromId(experimentId);
+			experiment.setMonitoringKpis(metrics);
+			experimentRepository.saveAndFlush(experiment);
+		} catch (NotExistingEntityException e) {
+			log.error("Unable to retrieve experiment information",e);
 		}
 	}
 	

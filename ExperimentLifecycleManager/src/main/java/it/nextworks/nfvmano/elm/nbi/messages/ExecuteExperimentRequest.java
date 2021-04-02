@@ -36,14 +36,19 @@ public class ExecuteExperimentRequest implements InterfaceMessage {
 	//Important note: this field is optional, i.e. if not provided all the test cases will be executed by default, with the configuration given in the descriptor
 	private Map<String, Map<String, String>> testCaseDescriptorConfiguration = new HashMap<String, Map<String,String>>();
 	
+
+	private boolean perfDiag = false;
+
 	public ExecuteExperimentRequest() {}
 	
 	public ExecuteExperimentRequest(String experimentId, 
 			Map<String, Map<String, String>> testCaseDescriptorConfiguration,
-			String executionName) {
+			String executionName,
+									boolean perfDiag) {
 		this.experimentId = experimentId;
 		if (testCaseDescriptorConfiguration != null) this.testCaseDescriptorConfiguration = testCaseDescriptorConfiguration;
 		this.executionName = executionName;
+		this.perfDiag = perfDiag;
 	}
 	
 		
@@ -60,8 +65,10 @@ public class ExecuteExperimentRequest implements InterfaceMessage {
 	public Map<String, Map<String, String>> getTestCaseDescriptorConfiguration() {
 		return testCaseDescriptorConfiguration;
 	}
-	
-	
+
+	public boolean getPerfDiag() {
+		return perfDiag;
+	}
 
 	/**
 	 * @return the executionName

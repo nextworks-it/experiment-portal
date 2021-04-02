@@ -1,0 +1,29 @@
+- name: compiling nfv-ifa-libs
+  shell: cd {{ exp_portal_folder }}/nfv-ifa-libs && mvn clean install
+
+- name: compiling identity-management
+  shell: cd {{ exp_portal_folder }}/slicer-identity-mgmt && mvn clean install
+
+- name: compiling nfv-sol-libs
+  shell: cd {{ exp_portal_folder }}/nfv-sol-libs && ./install_nfv_sol_libs.sh
+
+- name: compiling OSMr4PlusClient
+  shell: cd {{ exp_portal_folder }}/5g-catalogue/OSMr4PlusDataModel && mvn clean install
+
+- name: compiling ConfigManagerClient
+  shell: cd {{ exp_portal_folder }}/config-manager-client/ConfigManagerClient && mvn clean install
+
+- name: compiling nfvo-driver
+  shell: cd {{ exp_portal_folder }}/nfvo-drivers && mvn clean install
+
+- name: compiling slicer-catalogue
+  shell: cd {{ exp_portal_folder }}/slicer-catalogue && mvn clean install
+
+- name: compiling ticketing 
+  shell: cd {{ exp_portal_folder }}/experiment-portal/TICKETING_CLIENT && mvn clean install
+
+- name: compiling rbac_client 
+  shell: cd {{ exp_portal_folder }}/experiment-portal/RBAC_CLIENT && mvn clean install
+
+- name: compiling experimental portal
+  shell: cd {{ exp_portal_folder }}/experiment-portal/ExperimentLifecycleManager && mvn clean install
