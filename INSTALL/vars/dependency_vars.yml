@@ -2,7 +2,7 @@
 #Set to "true" to execute application
 start: "true"
 
-#Set to "true" to compile
+#Set to "false" to compile
 skip_compilation: "false"
 
 #path to the folder that will contain the application

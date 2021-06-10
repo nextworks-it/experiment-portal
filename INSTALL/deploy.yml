@@ -6,17 +6,6 @@
     - ./vars/dependency_vars.yml
   tasks:
 
-  ###################################################################################
-  # $ sudo apt install software-properties-common
-  # $ sudo apt-add-repository --yes --update ppa:ansible/ansible
-  # $ sudo apt install ansible
-
-  #Start the playbook. 
-  # $ ansible-playbook compiler.yml -K
-
-  #To execute also the application set the start value (true) in dependency_vars file
-  ###################################################################################
-
   - include: dependencies-task.yml
 
   - include: install.yml
