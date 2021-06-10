@@ -6,16 +6,16 @@ start: "true"
 skip_compilation: "false"
 
 #path to the folder that will contain the application
-exp_portal_folder: $HOME/experiment-portal
+exp_portal_folder: /home/ubuntu/elcm
 
 #default user
 default_user: ubuntu
 
 #path of the log directory
-exp_portal_log: /var/log/elcm
+exp_portal_log: /var/log/elm
 
 #nfv-ifa-libs
-ifa_libs_branch: master
+ifa_libs_branch: feat-librefactor
 ifa_libs_path: https://github.com/nextworks-it/nfv-ifa-libs.git
 
 #identity-management

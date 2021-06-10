@@ -1,0 +1,78 @@
+- hosts: localhost
+  connection: local
+  #debugger: on_failed
+  gather_facts: yes
+  vars_files:
+    - ./vars/dependency_vars.yml
+  tasks:
+
+  ###################################################################################
+  # $ sudo apt install software-properties-common
+  # $ sudo apt-add-repository --yes --update ppa:ansible/ansible
+  # $ sudo apt install ansible
+
+  #Start the playbook. 
+  # $ ansible-playbook compiler.yml -K
+
+  #To execute also the application set the start value (true) in dependency_vars file
+  ###################################################################################
+
+  - include: dependencies-task.yml
+
+  - include: install.yml
+    when: skip_compilation is defined and skip_compilation == "false"
+
+  - name: check if log folder already exist
+    stat:
+      path: "{{ exp_portal_log }}"
+    register: check_output_log
+
+  - name: create log directory
+    become: yes
+    file:
+      path: "{{ exp_portal_log }}"
+      state: directory
+    when: check_output_log['stat']['exists'] == false
+  
+  - name: change right
+    become: yes
+    shell: chown {{ default_user }} {{ exp_portal_log }} && chgrp {{ default_user }} {{ exp_portal_log }}
+    when: check_output_log['stat']['exists'] == false
+
+  #start
+  - name: start postgresql
+    shell: service postgresql start || true
+    become: yes
+    when: start is defined and start == "true"
+
+  - name: start rabbitmq
+    shell: service rabbitmq-server start || true
+    become: yes
+    when: start is defined and start == "true"
+
+  - name: check db postgres
+    shell: psql -lqt | cut -d \| -f 1 | grep -w eveportal | xargs
+    become_user: postgres
+    become: yes
+    register: db_output
+
+  - name: configure postgresql
+    shell: psql -c "ALTER USER postgres PASSWORD 'postgres';" >/dev/null
+    become: yes
+    become_user: postgres
+    when: start is defined and start == "true"
+
+  - name: configure postgresql
+    shell: psql -c "CREATE DATABASE eveportal;" >/dev/null
+    become: yes
+    become_user: postgres
+    when: start is defined and start == "true" and db_output.stdout==""
+
+  - name: copy configuration file
+    shell: cp application.properties {{ exp_portal_folder }}/experiment-portal/ExperimentLifecycleManager/src/main/resources
+    when: start is defined and start == "true"
+
+  - name: start experimental portal. Ctrl-c to terminate. Check exp_portal_log in /vars for logs.
+    shell: cd {{ exp_portal_folder }}/experiment-portal/ExperimentLifecycleManager && mvn spring-boot:run
+    when: start is defined and start == "true"
+
