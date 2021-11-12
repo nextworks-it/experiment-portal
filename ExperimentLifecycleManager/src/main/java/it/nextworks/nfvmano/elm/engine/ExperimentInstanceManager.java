@@ -444,7 +444,7 @@ public class ExperimentInstanceManager {
 				}else{
 
 					dst = targetSites.get(0).toString();
-					if(targetSites.get(0)==EveSite.SPAIN_5GROWTH_INNOVALIA||targetSites.get(0)==EveSite.ITALY_5GROWTH_COMAU){
+					if(targetSites.get(0)==EveSite.SPAIN_5GROWTH_INNOVALIA||targetSites.get(0)==EveSite.ITALY_5GROWTH_COMAU||targetSites.get(0)==EveSite.SPAIN_5GROWTH_INNOVALIA_BILBAO){
 						log.debug("Setting 5Growth DF and IL");
 						df = nsInfo.getNfvNsdId()+"_"+nsInfo.getDeploymentFlavourId()+"_"+nsInfo.getInstantiationLevelId()+"_df";
 						il = nsInfo.getNfvNsdId()+"_"+nsInfo.getDeploymentFlavourId()+"_"+nsInfo.getInstantiationLevelId()+"_il";
